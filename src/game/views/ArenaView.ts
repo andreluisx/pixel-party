@@ -6,6 +6,7 @@ import type { ParticipantInfo } from '@shared/types';
 import { SLOT_COLORS } from '@shared/types';
 import { num } from '../art/palette';
 import { sfx } from '../audio/sfx';
+import { FRAME_INDEX } from '../art/characters';
 
 /** Visual da Arena de Teste. Só desenha o que o servidor mandou. */
 export class ArenaView {
@@ -19,7 +20,7 @@ export class ArenaView {
     for (const [c, r] of ROCK_CELLS) scene.add.image(c * TILE, r * TILE, 'rock').setOrigin(0, 0).setDepth(r * TILE + 10);
     for (const p of participants) {
       const shadow = scene.add.image(0, 0, 'shadow').setDepth(1).setAlpha(0.9);
-      const sprite = scene.add.sprite(0, 0, `char-${p.characterId}`, 0).setOrigin(0.5, 0.8);
+      const sprite = scene.add.sprite(0, 0, `char-${p.characterId}`, 0).setOrigin(0.5, 0.78);
       const marker = scene.add.image(0, 0, 'marker').setTint(num(SLOT_COLORS[p.slot] ?? '#ffffff')).setDepth(9999);
       const hitbox = scene.add.rectangle(0, 0, 10, 10).setStrokeStyle(1, 0xff00ff).setVisible(false).setDepth(10000);
       this.players.set(p.id, { sprite, shadow, marker, hitbox, tx: -1, ty: -1, moving: false });
@@ -70,11 +71,11 @@ export class ArenaView {
       v.moving = p.dx !== 0 || p.dy !== 0;
       if (p.dx !== 0) v.sprite.setFlipX(p.dx < 0);
       const bob = v.moving ? (Math.floor(timeMs / 130) % 2) : 0;
-      v.sprite.setFrame(v.moving ? bob : 0);
+      v.sprite.setFrame(v.moving ? FRAME_INDEX.walk + bob : FRAME_INDEX.idle + (Math.floor(timeMs / 500) % 2));
       const px = Math.round(v.sprite.x), py = Math.round(v.sprite.y) - (v.moving && bob ? 1 : 0);
       v.sprite.setPosition(px, py).setDepth(p.y);
       v.shadow.setPosition(px, Math.round(p.y) + 4).setDepth(p.y - 1);
-      v.marker.setPosition(px, py - 15 + Math.round(Math.sin(timeMs / 200) * 1));
+      v.marker.setPosition(px, py - 17 + Math.round(Math.sin(timeMs / 200) * 1));
       v.hitbox.setPosition(p.x, p.y).setVisible(this.debug);
     }
   }

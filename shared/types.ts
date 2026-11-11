@@ -21,9 +21,10 @@ export interface ParticipantInfo {
   characterId: string;
   isBot: boolean;
   connected: boolean;
+  ready?: boolean;
   difficulty?: BotDifficulty;
   personality?: BotPersonality;
 }
 
 export const SLOT_COLORS = ['#ff5d5d', '#4da3ff', '#4fd36b', '#ffd34d'] as const;
-export const CHARACTER_IDS = ['explorer', 'aventureira', 'mago', 'arqueiro'] as const;
+export { CHARACTER_IDS } from './characters';

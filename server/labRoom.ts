@@ -84,7 +84,7 @@ export class LabRoom {
     if (!slot) return { ok: false, error: 'Sala cheia (4 jogadores).' };
     const id = `p-${Math.random().toString(36).slice(2, 8)}`;
     this.participants[slot.slot] = {
-      id, slot: slot.slot, name: name || `Jogador ${slot.slot + 1}`, characterId: CHARACTER_IDS[slot.slot] ?? 'explorer', isBot: false, connected: true,
+      id, slot: slot.slot, name: name || `Jogador ${slot.slot + 1}`, characterId: CHARACTER_IDS[slot.slot] ?? 'explorador', isBot: false, connected: true,
     };
     this.attach(id, sock);
     this.broadcastLobby();

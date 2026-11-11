@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '../shared/protocol';
 import { LabRoom, type Sock } from './labRoom';
+import { GameRoom } from './gameRoom';
 import { getMinigame, MINIGAME_LIST } from '../shared/minigames';
 import { makeBotProfile } from '../shared/bots';
 import { simulateMatch } from '../shared/sim';
@@ -14,12 +15,13 @@ const http = createServer((req, res) => {
 });
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(http, { cors: { origin: true } });
 const rooms = new Map<string, LabRoom>();
+const gameRooms = new Map<string, GameRoom>();
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function newCode(): string {
   for (;;) {
     const c = Array.from({ length: 5 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join('');
-    if (!rooms.has(c)) return c;
+    if (!rooms.has(c) && !gameRooms.has(c)) return c;
   }
 }
 const cleanName = (n?: string) => (n ?? '').toString().trim().slice(0, 14);
@@ -56,7 +58,41 @@ io.on('connection', (socket: Sock) => {
   socket.on('lab:start', () => roomOf()?.start(socket.data.playerId));
   socket.on('lab:restart', () => roomOf()?.start(socket.data.playerId));
   socket.on('mg:input', (p) => { if (p) roomOf()?.handleInput(socket.data.playerId, Number(p.seq), p.input); });
-  socket.on('disconnect', () => roomOf()?.leave(socket));
+  socket.on('disconnect', () => { roomOf()?.leave(socket); gameRoomOf()?.disconnect(socket); });
+
+  // ---------- sala de jogo (lobby) ----------
+  const gameRoomOf = () => gameRooms.get(socket.data.gameCode as string);
+  const myId = () => socket.data.gameId as string;
+
+  socket.on('room:create', (p, ack) => {
+    const code = newCode();
+    const room = new GameRoom(io, code);
+    room.onEmpty = () => { room.dispose(); gameRooms.delete(code); };
+    gameRooms.set(code, room);
+    const r = room.join(socket, cleanName(p?.name));
+    if (!r.ok) return ack(r);
+    ack({ ok: true, you: r.id, room: room.state() });
+  });
+  socket.on('room:join', (p, ack) => {
+    const room = gameRooms.get((p?.code ?? '').toString().trim().toUpperCase());
+    if (!room) return ack({ ok: false, error: 'Código não encontrado. Confira as 5 letras.' });
+    const r = room.join(socket, cleanName(p.name));
+    if (!r.ok) return ack(r);
+    ack({ ok: true, you: r.id, room: room.state() });
+  });
+  socket.on('room:rejoin', (p, ack) => {
+    const room = gameRooms.get((p?.code ?? '').toString().toUpperCase());
+    if (!room) return ack({ ok: false, error: 'A sala foi encerrada.' });
+    const r = room.rejoin(socket, p.you);
+    if (!r.ok) return ack(r);
+    ack({ ok: true, you: p.you, room: room.state() });
+  });
+  socket.on('room:setCharacter', (c) => gameRoomOf()?.setCharacter(myId(), c));
+  socket.on('room:setReady', (r) => gameRoomOf()?.setReady(myId(), r));
+  socket.on('room:setBot', (p) => { if (p) gameRoomOf()?.setBot(myId(), p.slot, p.difficulty); });
+  socket.on('room:start', () => gameRoomOf()?.start(myId()));
+  socket.on('room:backToLobby', () => gameRoomOf()?.backToLobby(myId()));
+  socket.on('room:leave', () => gameRoomOf()?.leave(socket));
 
   // Simulação acelerada, só com bots, sem sala nem relógio.
   socket.on('lab:simulate', (cfg, ack) => {

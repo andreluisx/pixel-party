@@ -1,6 +1,8 @@
 import type Phaser from 'phaser';
 import { PAL } from './palette';
 import { createRng } from '@shared/rng';
+import { CHARACTER_IDS, type CharacterId } from '@shared/characters';
+import { characterFrame, FRAME_H, FRAME_W, type CharAnim } from './characters';
 import { ARENA_H, ARENA_W, TILE, WALL } from '@shared/minigames/pipeline-test';
 
 /**
@@ -34,56 +36,12 @@ function canvasTex(scene: Phaser.Scene, key: string, w: number, h: number, draw:
   tex.refresh();
 }
 
-// ---------- personagens: silhueta própria por chapéu/cabelo (12x16, 2 quadros de caminhada) ----------
-const FACE = [
-  '.osssssssso.',
-  '.osesssseso.',
-  '.osssssssso.',
-  '.osssssssso.',
-  '..oossssoo..',
-];
-const BODY = [
-  '.obbbbbbbbo.',
-  'ossbbbbbbsso',
-  '.obbbbbbbbo.',
-  '..obbbbbbo..',
-];
-const LEGS_A = ['..opp..ppo..', '..off..ffo..', '..ooo..ooo..'];
-const LEGS_B = ['..opp..ppo..', '.offo..offo.', '.oooo..oooo.'];
-
-interface CharDef { top: string[]; faceOverride?: Record<number, string>; colors: ColorMap }
-const CHARACTERS: Record<string, CharDef> = {
-  explorer: {
-    top: ['...oooooo...', '..ohhhhhho..', '.ohhhhhhhho.', 'oHHHHHHHHHHo'],
-    colors: { h: '#8a5a2b', H: '#d9a441', b: '#3f7fe0', p: '#2a3f8f', f: '#5a3a1a' },
-  },
-  aventureira: {
-    top: ['.oHo.oo.oHo.', '.ohhhhhhhho.', 'ohhhhhhhhhho', 'ohhsssssshho'],
-    colors: { h: '#e0523a', H: '#ff8fc1', b: '#ff7fb5', p: '#a84f8f', f: '#5a2a4a' },
-  },
-  mago: {
-    top: ['.....oo.....', '....ohho....', '..oohhhhoo..', 'ooHHHHHHHHoo'],
-    faceOverride: { 3: '.oswwwwwwso.', 4: '..oowwwwoo..' },
-    colors: { h: '#6a3fb5', H: '#f5b83d', b: '#7a4fc5', p: '#4a2a85', f: '#2a1a50', w: '#f4efe0' },
-  },
-  arqueiro: {
-    top: ['..oooooooo..', '.ohhhhhhhho.', 'ohhHHHHHHhho', 'ohhsssssshho'],
-    colors: { h: '#3a9a4a', H: '#256f34', b: '#2f7d3a', p: '#5a3a1a', f: '#3a2410' },
-  },
-};
-
-export const CHARACTER_W = 12;
-export const CHARACTER_H = 16;
-
-function buildCharacter(scene: Phaser.Scene, id: string, def: CharDef) {
-  const base: ColorMap = { o: PAL.ink, s: PAL.skin, e: PAL.ink, ...def.colors };
-  const face = [...FACE];
-  if (def.faceOverride) for (const [i, row] of Object.entries(def.faceOverride)) face[Number(i)] = row;
-  const rowsFor = (legs: string[]) => [...def.top, ...face, ...BODY, ...legs];
-  canvasTex(scene, `char-${id}`, CHARACTER_W * 2, CHARACTER_H, (ctx) => {
-    drawMap(ctx, rowsFor(LEGS_A), base, 0, 0);
-    drawMap(ctx, rowsFor(LEGS_B), base, CHARACTER_W, 0);
-  }, { w: CHARACTER_W, count: 2 });
+// ---------- personagens: spritesheet com todas as animações (ver characters.ts) ----------
+function buildCharacter(scene: Phaser.Scene, id: CharacterId) {
+  const order: [CharAnim, number][] = [['idle', 0], ['idle', 1], ['walk', 0], ['walk', 1], ['celebrate', 0], ['celebrate', 1], ['lose', 0], ['surprised', 0], ['surprised', 1]];
+  canvasTex(scene, `char-${id}`, FRAME_W * order.length, FRAME_H, (ctx) => {
+    order.forEach(([anim, f], i) => ctx.drawImage(characterFrame(id, anim, f), i * FRAME_W, 0));
+  }, { w: FRAME_W, count: order.length });
 }
 
 // ---------- moeda: 4 quadros girando ----------
@@ -186,7 +144,7 @@ function buildArenaBg(scene: Phaser.Scene) {
 }
 
 export function buildAllTextures(scene: Phaser.Scene) {
-  for (const [id, def] of Object.entries(CHARACTERS)) buildCharacter(scene, id, def);
+  for (const id of CHARACTER_IDS) buildCharacter(scene, id);
   buildCoin(scene);
   buildRock(scene);
   buildShadow(scene);
