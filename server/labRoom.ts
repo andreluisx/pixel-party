@@ -84,7 +84,7 @@ export class LabRoom {
     if (!slot) return { ok: false, error: 'Sala cheia (4 jogadores).' };
     const id = `p-${Math.random().toString(36).slice(2, 8)}`;
     this.participants[slot.slot] = {
-      id, slot: slot.slot, name: name || `Jogador ${slot.slot + 1}`, characterId: CHARACTER_IDS[slot.slot] ?? 'explorer', isBot: false, connected: true,
+      id, slot: slot.slot, name: name || `Jogador ${slot.slot + 1}`, characterId: CHARACTER_IDS[slot.slot] ?? 'explorador', isBot: false, connected: true,
     };
     this.attach(id, sock);
     this.broadcastLobby();
@@ -198,7 +198,7 @@ export class LabRoom {
 
   private emitSnapshot() {
     const def = this.def!;
-    this.io.to(this.room()).emit('mg:snapshot', { tick: this.tick, timeLeftMs: def.timeLeftMs(this.state), scores: def.liveScores(this.state), state: this.state });
+    this.io.to(this.room()).emit('mg:snapshot', { tick: this.tick, timeLeftMs: def.timeLeftMs(this.state), scores: def.liveScores(this.state), state: def.publicState ? def.publicState(this.state as never) : this.state });
   }
 
   private finish() {

@@ -10,7 +10,8 @@
     "start:server": "tsx server/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "smoke": "tsx tests/smoke.ts"
+    "smoke": "tsx tests/smoke.ts",
+    "smoke:room": "tsx tests/smoke-room.ts"
   },
   "keywords": [],
   "author": "",

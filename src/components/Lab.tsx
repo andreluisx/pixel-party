@@ -7,6 +7,7 @@ import { sfx } from '@/game/audio/sfx';
 import type { BotDifficulty, ParticipantInfo } from '@shared/types';
 import { SLOT_COLORS } from '@shared/types';
 import type { MinigameResult } from '@shared/minigame';
+import { MINIGAME_LIST } from '@shared/minigames';
 
 const EMPTY: LabState = { connected: false, you: null, lobby: null, intro: null, countdown: null, result: null, error: null, snapsPerSec: 0 };
 const DIFFS: { id: BotDifficulty; label: string }[] = [{ id: 'easy', label: 'Fácil' }, { id: 'medium', label: 'Médio' }, { id: 'hard', label: 'Difícil' }];
@@ -35,7 +36,7 @@ function PlayerChip({ p, you, host }: { p: ParticipantInfo; you: boolean; host: 
   );
 }
 
-function ResultTable({ result, rewards, players, you }: { result: MinigameResult; rewards: Record<string, number>; players: ParticipantInfo[]; you: string | null }) {
+function ResultTable({ result, rewards, players, you, format }: { result: MinigameResult; rewards: Record<string, number>; players: ParticipantInfo[]; you: string | null; format?: (n: number) => string }) {
   const name = (id: string) => players.find((p) => p.id === id);
   if (result.kind !== 'ranking') return <p>Resultado cooperativo: {result.success ? 'missão cumprida' : 'missão falhou'}</p>;
   return (
@@ -47,7 +48,7 @@ function ResultTable({ result, rewards, players, you }: { result: MinigameResult
             <span className="rank-pos">{r.rank}º</span>
             <span className="dot" style={{ background: SLOT_COLORS[p?.slot ?? 0] }} />
             <span className="rank-name">{p?.name ?? r.playerId}{p?.isBot && <RobotIcon />}</span>
-            <span className="rank-score">{r.score} pts</span>
+            <span className="rank-score">{format ? format(r.score) : `${r.score} pts`}</span>
             <span className="rank-coins">+{rewards[r.playerId] ?? 0}</span>
           </li>
         );
@@ -66,13 +67,32 @@ function TouchPad({ client }: { client: LabClient }) {
     const len = Math.hypot(vx, vy) || 1;
     const k = Math.min(1, len);
     setKnob({ x: (vx / len) * k * 32, y: (vy / len) * k * 32 });
-    client.touch = { dx: Math.abs(vx) > 0.3 ? (vx > 0 ? 1 : -1) : 0, dy: Math.abs(vy) > 0.3 ? (vy > 0 ? 1 : -1) : 0 };
+    client.touch = { ...client.touch, dx: Math.abs(vx) > 0.3 ? (vx > 0 ? 1 : -1) : 0, dy: Math.abs(vy) > 0.3 ? (vy > 0 ? 1 : -1) : 0 };
   };
-  const end = () => { setKnob({ x: 0, y: 0 }); client.touch = { dx: 0, dy: 0 }; };
+  const end = () => { setKnob({ x: 0, y: 0 }); client.touch = { ...client.touch, dx: 0, dy: 0 }; };
   return (
     <div ref={ref} className="touchpad" onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); update(e); }}
       onPointerMove={(e) => { if (e.buttons) update(e); }} onPointerUp={end} onPointerCancel={end} aria-label="Joystick virtual">
       <div className="touchpad-knob" style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }} />
+    </div>
+  );
+}
+
+function ActionButton({ client, label }: { client: LabClient; label: string }) {
+  const set = (v: boolean) => { client.touch = { ...client.touch, action: v }; };
+  return (
+    <button className="actionbtn" aria-label={label} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); set(true); }}
+      onPointerUp={() => set(false)} onPointerCancel={() => set(false)} onContextMenu={(e) => e.preventDefault()}>{label}</button>
+  );
+}
+
+function DPad({ client }: { client: LabClient }) {
+  const btn = (k: 'L' | 'U' | 'D' | 'R', label: string, cls: string) => (
+    <button className={`dpad-btn ${cls}`} aria-label={label} onPointerDown={(e) => { e.preventDefault(); client.touchPresses.push(k); }} onContextMenu={(e) => e.preventDefault()}>{label}</button>
+  );
+  return (
+    <div className="dpad" aria-label="Direções">
+      {btn('U', '↑', 'u')}{btn('L', '←', 'l')}{btn('R', '→', 'r')}{btn('D', '↓', 'd')}
     </div>
   );
 }
@@ -84,7 +104,7 @@ export function Lab() {
   const [debug, setDebug] = useState(false);
   const [name, setName] = useState('Jogador');
   const [code, setCode] = useState('');
-  const [minigameId, setMinigameId] = useState('pipeline-test');
+  const [minigameId, setMinigameId] = useState(MINIGAME_LIST[0]!.id);
   const [difficulty, setDifficulty] = useState<BotDifficulty>('medium');
   const [seed, setSeed] = useState('');
   const [sim, setSim] = useState<{ result: MinigameResult; rewards: Record<string, number>; ticks: number; players: ParticipantInfo[] } | null>(null);
@@ -97,6 +117,7 @@ export function Lab() {
   useEffect(() => {
     const c = new LabClient();
     setClient(c);
+    (window as unknown as { __labClient?: LabClient }).__labClient = c; // depuração e testes automatizados do laboratório
     let game: Phaser.Game | null = null;
     let cancelled = false;
     (async () => {
@@ -105,14 +126,7 @@ export function Lab() {
       game = await createGame(stage.current, c, () => debugRef.current);
       if (cancelled) game.destroy(true);
     })();
-    // setas/espaço não rolam a página durante o jogo (mas continuam funcionando em campos de texto)
-    const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t && /INPUT|SELECT|TEXTAREA/.test(t.tagName)) return;
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key) && c.state.lobby && c.state.lobby.phase !== 'lobby') e.preventDefault();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => { cancelled = true; window.removeEventListener('keydown', onKey); game?.destroy(true); c.dispose(); };
+    return () => { cancelled = true; game?.destroy(true); c.dispose(); };
   }, []);
 
   const store = useMemo(() => ({ sub: client ? client.subscribe : () => () => {}, get: client ? client.getState : () => EMPTY }), [client]);
@@ -176,7 +190,7 @@ export function Lab() {
               </label>
               <label className="field">Minigame
                 <select value={minigameId} onChange={(e) => setMinigameId(e.target.value)}>
-                  <option value="pipeline-test">Arena de Teste (provisório)</option>
+                  {MINIGAME_LIST.map((m) => <option key={m.id} value={m.id}>{m.name}{m.id === 'pipeline-test' ? ' (provisório)' : ''}</option>)}
                 </select>
               </label>
               <div className="field">Dificuldade dos bots
@@ -234,7 +248,7 @@ export function Lab() {
           {sim && !lobby && (
             <div className="sim">
               <h3>Resultado da simulação ({(sim.ticks / 30).toFixed(1)} s)</h3>
-              <ResultTable result={sim.result} rewards={sim.rewards} players={sim.players} you={null} />
+              <ResultTable result={sim.result} rewards={sim.rewards} players={sim.players} you={null} format={MINIGAME_LIST.find((m) => m.id === minigameId)?.formatScore} />
             </div>
           )}
           {simError && <p className="hint">Erro: {simError}</p>}
@@ -252,7 +266,7 @@ export function Lab() {
                 <ul className="hud-scores">
                   {players.map((p) => (
                     <li key={p.id} style={{ borderColor: SLOT_COLORS[p.slot] }} className={p.id === st.you ? 'me' : ''}>
-                      <span className="dot" style={{ background: SLOT_COLORS[p.slot] }} />{p.name}{p.isBot && <RobotIcon />}<b>{hud.scores[p.id] ?? 0}</b>
+                      <span className="dot" style={{ background: SLOT_COLORS[p.slot] }} />{p.name}{p.isBot && <RobotIcon />}<b>{hud.scores[p.id] ?? 0}{meta?.hudUnit ?? ''}</b>
                     </li>
                   ))}
                 </ul>
@@ -275,15 +289,17 @@ export function Lab() {
               <div className="overlay center">
                 <div className="card result">
                   <h2>Resultado</h2>
-                  <ResultTable result={st.result.result} rewards={st.result.rewards} players={players} you={st.you} />
+                  <ResultTable result={st.result.result} rewards={st.result.rewards} players={players} you={st.you} format={MINIGAME_LIST.find((m) => m.id === lobby?.config.minigameId)?.formatScore} />
                   <p className="hint">Moedas de recompensa (aplicadas uma única vez · id {st.result.rewardEventId})</p>
                   {isHost ? <button className="btn btn-gold" onClick={() => { sfx.click(); client?.restart(); }}>Jogar de novo</button> : <p className="hint">Aguardando o host.</p>}
                 </div>
               </div>
             )}
-            {client && phase === 'active' && <TouchPad client={client} />}
+            {client && phase === 'active' && meta?.instructions.touch?.stick !== false && <TouchPad client={client} />}
+            {client && phase === 'active' && meta?.instructions.touch?.dpad && <DPad client={client} />}
+            {client && phase === 'active' && meta?.instructions.touch?.action && <ActionButton client={client} label={meta.instructions.touch.action} />}
           </div>
-          <p className="hint under">Controles: WASD ou setas. No celular, use o joystick no canto da arena.</p>
+          <p className="hint under">{meta ? meta.instructions.controls.map((c) => `${c.keys}: ${c.action}`).join(' · ') : 'Controles: WASD ou setas.'} · No celular: joystick e botão na tela.</p>
         </section>
       </div>
     </div>

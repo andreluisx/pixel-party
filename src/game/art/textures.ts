@@ -1,6 +1,8 @@
 import type Phaser from 'phaser';
 import { PAL } from './palette';
 import { createRng } from '@shared/rng';
+import { CHARACTER_IDS, type CharacterId } from '@shared/characters';
+import { characterFrame, FRAME_H, FRAME_W, type CharAnim } from './characters';
 import { ARENA_H, ARENA_W, TILE, WALL } from '@shared/minigames/pipeline-test';
 
 /**
@@ -34,56 +36,12 @@ function canvasTex(scene: Phaser.Scene, key: string, w: number, h: number, draw:
   tex.refresh();
 }
 
-// ---------- personagens: silhueta própria por chapéu/cabelo (12x16, 2 quadros de caminhada) ----------
-const FACE = [
-  '.osssssssso.',
-  '.osesssseso.',
-  '.osssssssso.',
-  '.osssssssso.',
-  '..oossssoo..',
-];
-const BODY = [
-  '.obbbbbbbbo.',
-  'ossbbbbbbsso',
-  '.obbbbbbbbo.',
-  '..obbbbbbo..',
-];
-const LEGS_A = ['..opp..ppo..', '..off..ffo..', '..ooo..ooo..'];
-const LEGS_B = ['..opp..ppo..', '.offo..offo.', '.oooo..oooo.'];
-
-interface CharDef { top: string[]; faceOverride?: Record<number, string>; colors: ColorMap }
-const CHARACTERS: Record<string, CharDef> = {
-  explorer: {
-    top: ['...oooooo...', '..ohhhhhho..', '.ohhhhhhhho.', 'oHHHHHHHHHHo'],
-    colors: { h: '#8a5a2b', H: '#d9a441', b: '#3f7fe0', p: '#2a3f8f', f: '#5a3a1a' },
-  },
-  aventureira: {
-    top: ['.oHo.oo.oHo.', '.ohhhhhhhho.', 'ohhhhhhhhhho', 'ohhsssssshho'],
-    colors: { h: '#e0523a', H: '#ff8fc1', b: '#ff7fb5', p: '#a84f8f', f: '#5a2a4a' },
-  },
-  mago: {
-    top: ['.....oo.....', '....ohho....', '..oohhhhoo..', 'ooHHHHHHHHoo'],
-    faceOverride: { 3: '.oswwwwwwso.', 4: '..oowwwwoo..' },
-    colors: { h: '#6a3fb5', H: '#f5b83d', b: '#7a4fc5', p: '#4a2a85', f: '#2a1a50', w: '#f4efe0' },
-  },
-  arqueiro: {
-    top: ['..oooooooo..', '.ohhhhhhhho.', 'ohhHHHHHHhho', 'ohhsssssshho'],
-    colors: { h: '#3a9a4a', H: '#256f34', b: '#2f7d3a', p: '#5a3a1a', f: '#3a2410' },
-  },
-};
-
-export const CHARACTER_W = 12;
-export const CHARACTER_H = 16;
-
-function buildCharacter(scene: Phaser.Scene, id: string, def: CharDef) {
-  const base: ColorMap = { o: PAL.ink, s: PAL.skin, e: PAL.ink, ...def.colors };
-  const face = [...FACE];
-  if (def.faceOverride) for (const [i, row] of Object.entries(def.faceOverride)) face[Number(i)] = row;
-  const rowsFor = (legs: string[]) => [...def.top, ...face, ...BODY, ...legs];
-  canvasTex(scene, `char-${id}`, CHARACTER_W * 2, CHARACTER_H, (ctx) => {
-    drawMap(ctx, rowsFor(LEGS_A), base, 0, 0);
-    drawMap(ctx, rowsFor(LEGS_B), base, CHARACTER_W, 0);
-  }, { w: CHARACTER_W, count: 2 });
+// ---------- personagens: spritesheet com todas as animações (ver characters.ts) ----------
+function buildCharacter(scene: Phaser.Scene, id: CharacterId) {
+  const order: [CharAnim, number][] = [['idle', 0], ['idle', 1], ['walk', 0], ['walk', 1], ['celebrate', 0], ['celebrate', 1], ['lose', 0], ['surprised', 0], ['surprised', 1], ['run', 0], ['run', 1], ['jump', 0], ['fall', 0]];
+  canvasTex(scene, `char-${id}`, FRAME_W * order.length, FRAME_H, (ctx) => {
+    order.forEach(([anim, f], i) => ctx.drawImage(characterFrame(id, anim, f), i * FRAME_W, 0));
+  }, { w: FRAME_W, count: order.length });
 }
 
 // ---------- moeda: 4 quadros girando ----------
@@ -185,8 +143,91 @@ function buildArenaBg(scene: Phaser.Scene) {
   });
 }
 
+// ---------- texturas da Corrida Maluca ----------
+function buildRaceTextures(scene: Phaser.Scene) {
+  canvasTex(scene, 'ground', 16, 10, (ctx) => {
+    drawMap(ctx, [
+      'LLLLLLLLLLLLLLLL', 'GGGGGGGGGGGGGGGG', 'GgGGGgGGGGGgGGGG', 'ddddddddddddddddd'.slice(0, 16),
+      'DDDDDDDDDDDDDDDD', 'DDdDDDDDDDdDDDDD', 'DDDDDDdDDDDDDDDD', 'DdDDDDDDDDDdDDDD', 'DDDDDDDDDdDDDDDD', 'dDDDDDDDDDDDDDdD',
+    ], { L: '#7fd66a', G: PAL.grass1, g: PAL.grass3, d: '#4a2e16', D: '#7a5230' });
+  });
+  canvasTex(scene, 'pit', 16, 10, (ctx) => {
+    drawMap(ctx, [
+      'WwwWWwwWWwwWWwwW', '2222222222222222', '1111111111111111', '1111111111111111', '1111111111111111',
+      '1111111111111111', '1111111111111111', '1111111111111111', '1111111111111111', '1111111111111111',
+    ], { W: '#9ad0ff', w: '#5e96f0', '2': '#2f6fd0', '1': '#1d3f94' });
+  });
+  canvasTex(scene, 'plank', 16, 6, (ctx) => {
+    drawMap(ctx, ['GGGGGGGGGGGGGGGG', 'oBBBBBBBoBBBBBBB', 'oBbBBBBBoBBbBBBB', 'oBBBBbBBoBBBBBBB', 'oBBBBBBBoBBBBBBB', 'dddddddddddddddd'], { G: PAL.grass1, o: '#3a2410', B: '#b5833f', b: '#8a5a2b', d: '#5a3a1a' });
+  });
+  canvasTex(scene, 'crate', 12, 13, (ctx) => {
+    drawMap(ctx, [
+      'oooooooooooo', 'oBBBBBBBBBBo', 'oBobBBBBboBo', 'oBBobBBboBBo', 'oBBBobboBBBo', 'oBBBBooBBBBo', 'oBBBBooBBBBo', 'oBBBobboBBBo', 'oBBobBBboBBo', 'oBobBBBBboBo', 'oBBBBBBBBBBo', 'obbbbbbbbbbo', 'oooooooooooo',
+    ], { o: PAL.ink, B: '#d9a441', b: '#a8651a' });
+  });
+  canvasTex(scene, 'spring', 12, 8, (ctx) => {
+    drawMap(ctx, ['.rrrrrrrrrr.', 'orrRRRRRRrro', '.oooooooooo.', '..o.o.o.o...'.slice(0, 12), '...oggggo...', '..oggggggo..'.slice(0, 12), '..oooooooo..', 'oooooooooooo'], { o: PAL.ink, r: '#e05252', R: '#ff9a8a', g: '#9a97ad' });
+  });
+  canvasTex(scene, 'checker', 8, 8, (ctx) => {
+    ctx.fillStyle = '#f4efe0'; ctx.fillRect(0, 0, 8, 8);
+    ctx.fillStyle = PAL.ink; ctx.fillRect(0, 0, 4, 4); ctx.fillRect(4, 4, 4, 4);
+  });
+  canvasTex(scene, 'sky-lane', 480, 67, (ctx) => {
+    const bands = ['#4a2f9a', '#5b3ea8', '#7a4fb8', '#a85fb0', '#d9669a', '#f08a8a', '#ffab7a', '#ffc98a'];
+    bands.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(0, Math.round((i * 67) / bands.length), 480, Math.ceil(67 / bands.length) + 1); });
+    ctx.fillStyle = '#fff3c4'; ctx.fillRect(378, 24, 14, 14); ctx.fillRect(380, 22, 10, 18); ctx.fillRect(376, 26, 18, 10);
+    const rng = createRng(11);
+    for (let i = 0; i < 18; i++) { ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillRect(rng.int(0, 479), rng.int(0, 20), 1, 1); }
+  });
+  canvasTex(scene, 'hills', 128, 40, (ctx) => {
+    for (let x = 0; x < 128; x++) {
+      const back = 26 + Math.round(6 * Math.sin((x / 128) * Math.PI * 2) + 3 * Math.sin((x / 128) * Math.PI * 6 + 1));
+      const front = 32 + Math.round(4 * Math.sin((x / 128) * Math.PI * 4 + 2) + 2 * Math.sin((x / 128) * Math.PI * 8));
+      ctx.fillStyle = '#6a3f9f'; ctx.fillRect(x, back, 1, 40 - back);
+      ctx.fillStyle = '#2f6f5a'; ctx.fillRect(x, front, 1, 40 - front);
+    }
+  });
+  canvasTex(scene, 'clouds', 160, 30, (ctx) => {
+    const c = (x: number, y: number, w: number) => { ctx.fillStyle = 'rgba(255,225,240,0.85)'; ctx.fillRect(x + 3, y, w - 6, 4); ctx.fillRect(x, y + 3, w, 4); ctx.fillStyle = 'rgba(233,168,207,0.8)'; ctx.fillRect(x, y + 6, w, 1); };
+    c(10, 4, 26); c(70, 14, 34); c(122, 2, 22);
+  });
+}
+
+// ---------- texturas do Reflexo Relâmpago e fonte de números ----------
+const DIGITS: Record<string, string[]> = {
+  '0': ['111', '101', '101', '101', '111'], '1': ['010', '110', '010', '010', '111'], '2': ['111', '001', '111', '100', '111'],
+  '3': ['111', '001', '111', '001', '111'], '4': ['101', '101', '111', '001', '001'], '5': ['111', '100', '111', '001', '111'],
+  '6': ['111', '100', '111', '101', '111'], '7': ['111', '001', '001', '010', '010'], '8': ['111', '101', '111', '101', '111'],
+  '9': ['111', '101', '111', '001', '111'], '+': ['000', '010', '111', '010', '000'], '-': ['000', '000', '111', '000', '000'],
+};
+export const DIGIT_FRAMES = '0123456789+-';
+
+function buildReflexTextures(scene: Phaser.Scene) {
+  canvasTex(scene, 'digits', 3 * DIGIT_FRAMES.length, 5, (ctx) => {
+    ctx.fillStyle = '#ffffff';
+    [...DIGIT_FRAMES].forEach((ch, i) => DIGITS[ch]!.forEach((row, y) => { for (let x = 0; x < 3; x++) if (row[x] === '1') ctx.fillRect(i * 3 + x, y, 1, 1); }));
+  }, { w: 3, count: DIGIT_FRAMES.length });
+  canvasTex(scene, 'arrow', 14, 14, (ctx) => {
+    drawMap(ctx, [
+      '......o.......', '......oo......', '......oAo.....', '......oAAo....', 'oooooooAAAo...', 'oAAAAAAAAAAo..', 'oAAAAAAAAAAAo.',
+      'oAAAAAAAAAAAo.', 'oAAAAAAAAAAo..', 'oooooooAAAo...', '......oAAo....', '......oAo.....', '......oo......', '......o.......',
+    ], { o: PAL.ink, A: '#ffffff' });
+  });
+  canvasTex(scene, 'check', 12, 12, (ctx) => {
+    drawMap(ctx, ['............', '..........oo', '.........ogo', '........ogo.', '.oo....ogo..', 'ogo...ogo...', '.ogo.ogo....', '..ogogo.....', '...ogo......', '....o.......', '............', '............'], { o: PAL.ink, g: '#6dff8a' });
+  });
+  canvasTex(scene, 'cross', 12, 12, (ctx) => {
+    drawMap(ctx, ['............', '.oo......oo.', 'orro....orro', '.orro..orro.', '..orrooorr..', '...orrrro...', '...orrrro...', '..orrooorr..', '.orro..orro.', 'orro....orro', '.oo......oo.', '............'], { o: PAL.ink, r: '#ff5d5d' });
+  });
+  canvasTex(scene, 'star8', 8, 8, (ctx) => {
+    drawMap(ctx, ['...oo...', '..oyyo..', '.oyyyyo.', 'oyyYYyyo', '.oyyyyo.', '.oyooyo.', 'oyo..oyo', 'oo....oo'], { o: PAL.coinLo, y: PAL.coin, Y: PAL.coinHi });
+  });
+}
+
 export function buildAllTextures(scene: Phaser.Scene) {
-  for (const [id, def] of Object.entries(CHARACTERS)) buildCharacter(scene, id, def);
+  buildRaceTextures(scene);
+  buildReflexTextures(scene);
+  for (const id of CHARACTER_IDS) buildCharacter(scene, id);
   buildCoin(scene);
   buildRock(scene);
   buildShadow(scene);

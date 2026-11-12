@@ -1,5 +1,5 @@
 import type { BotDifficulty, BotPersonality, BotProfile, Slot } from './types';
-import { CHARACTER_IDS } from './types';
+import { CHARACTER_IDS } from './characters';
 
 /** Parâmetros que tornam o bot "humano": reação lenta, erros, nada de trapaça. */
 export interface DifficultyParams {

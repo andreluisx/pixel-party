@@ -27,7 +27,8 @@ export class LabClient {
 
   // Lidos pela cena Phaser a cada frame (não passam pelo React).
   latest: Snapshot | null = null;
-  touch = { dx: 0, dy: 0 };
+  touch = { dx: 0, dy: 0, action: false };
+  touchPresses: Array<'L' | 'U' | 'D' | 'R'> = [];
   private seq = 0;
   private lastSent = '';
   private lastSentAt = 0;
@@ -98,12 +99,12 @@ export class LabClient {
   dismissError() { this.set({ error: null }); }
 
   /** Chamado pela cena a cada frame; só envia quando muda (ou a cada 100 ms como batimento). */
-  sendInput(dx: number, dy: number) {
-    const key = `${dx},${dy}`;
+  sendInput(input: unknown) {
+    const key = JSON.stringify(input);
     const now = performance.now();
     if (key === this.lastSent && now - this.lastSentAt < 100) return;
     this.lastSent = key; this.lastSentAt = now;
-    this.socket.emit('mg:input', { seq: this.seq++, input: { dx, dy } });
+    this.socket.emit('mg:input', { seq: this.seq++, input });
   }
 
   dispose() { if (this.snapTimer) clearInterval(this.snapTimer); this.socket.removeAllListeners(); this.socket.disconnect(); this.listeners.clear(); }

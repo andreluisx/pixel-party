@@ -13,6 +13,8 @@ export interface MinigameInstructions {
   title: string;
   lines: string[];
   controls: ControlHint[];
+  /** Controles de toque: joystick e/ou botão de ação (rótulo). */
+  touch?: { stick: boolean; action?: string; dpad?: boolean };
 }
 
 /** Um "cérebro" de bot para um minigame. Vê o mesmo estado que um humano veria. */
@@ -27,6 +29,12 @@ export interface MinigameDefinition<S = unknown, I = unknown> {
   mode: 'ffa' | 'coop';
   durationMs: number;
   instructions: MinigameInstructions;
+  /** Unidade exibida ao lado do placar ao vivo (ex.: '%'). */
+  hudUnit?: string;
+  /** Como mostrar a pontuação no resultado (ex.: tempo de corrida). Padrão: "N pts". */
+  formatScore?(score: number): string;
+  /** Versão do estado enviada aos clientes (esconde segredos, ex.: o gerador aleatório). */
+  publicState?(state: S): unknown;
   /** Input neutro (ninguém tocando). */
   neutralInput(): I;
   /** Valida input vindo do cliente. Retorna null se for inválido. */
@@ -44,6 +52,7 @@ export interface MinigameDefinition<S = unknown, I = unknown> {
 }
 
 export interface MinigameMeta {
+  hudUnit?: string;
   id: string;
   name: string;
   category: MinigameCategory;
@@ -53,5 +62,5 @@ export interface MinigameMeta {
 }
 
 export function metaOf(def: MinigameDefinition<any, any>): MinigameMeta {
-  return { id: def.id, name: def.name, category: def.category, mode: def.mode, durationMs: def.durationMs, instructions: def.instructions };
+  return { id: def.id, name: def.name, category: def.category, mode: def.mode, durationMs: def.durationMs, instructions: def.instructions, hudUnit: def.hudUnit };
 }
