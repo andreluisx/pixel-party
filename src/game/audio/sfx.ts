@@ -109,12 +109,15 @@ class Sfx {
   go() { this.tone(880, 0.32, 'square', 0.14); this.tone(1320, 0.32, 'triangle', 0.1); }
   tick() { this.tone(300, 0.04, 'square', 0.06); }
   win() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.18, 'square', 0.12, i * 0.12)); }
+<<<<<<< HEAD
   jump() { this.tone(330, 0.12, 'square', 0.09, 0, 700); }
   hit() { this.tone(160, 0.2, 'sawtooth', 0.12, 0, 70); }
   fall() { this.tone(520, 0.45, 'triangle', 0.12, 0, 90); }
   spring() { this.tone(300, 0.25, 'square', 0.1, 0, 1100); }
   hitNote(streak: number) { this.tone(600 + Math.min(streak, 6) * 70, 0.1, 'square', 0.1); }
   miss() { this.tone(220, 0.12, 'triangle', 0.07); }
+=======
+>>>>>>> 89dd3df16bc6020c7711e0f3b84fc20dd55f6ec5
   select() { this.tone(660, 0.05, 'square', 0.09); this.tone(880, 0.09, 'square', 0.09, 0.05); }
   ready() { this.tone(523, 0.07, 'square', 0.1); this.tone(784, 0.07, 'square', 0.1, 0.07); this.tone(1047, 0.16, 'square', 0.1, 0.14); }
   error() { this.tone(180, 0.18, 'sawtooth', 0.1, 0, 90); }

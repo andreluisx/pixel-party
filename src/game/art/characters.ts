@@ -7,13 +7,18 @@ import { PAL } from './palette';
  * com silhueta própria. As animações são derivadas do mesmo mapa por transformações (braços, olhos, achatamento).
  * '.' = transparente. Letras = cores da paleta do personagem.
  */
+<<<<<<< HEAD
 export type CharAnim = 'idle' | 'walk' | 'celebrate' | 'lose' | 'surprised' | 'run' | 'jump' | 'fall';
+=======
+export type CharAnim = 'idle' | 'walk' | 'celebrate' | 'lose' | 'surprised';
+>>>>>>> 89dd3df16bc6020c7711e0f3b84fc20dd55f6ec5
 export const ANIMS: Record<CharAnim, { frames: number; fps: number; label: string }> = {
   idle: { frames: 2, fps: 2, label: 'Espera' },
   walk: { frames: 2, fps: 7, label: 'Caminhada' },
   celebrate: { frames: 2, fps: 5, label: 'Comemoração' },
   lose: { frames: 1, fps: 1, label: 'Derrota' },
   surprised: { frames: 2, fps: 6, label: 'Surpresa' },
+<<<<<<< HEAD
   run: { frames: 2, fps: 11, label: 'Corrida' },
   jump: { frames: 1, fps: 1, label: 'Pulo' },
   fall: { frames: 1, fps: 1, label: 'Queda' },
@@ -22,6 +27,13 @@ export const ANIM_ORDER: CharAnim[] = ['idle', 'walk', 'run', 'jump', 'fall', 'c
 /** Índice do primeiro quadro de cada animação na spritesheet do Phaser. */
 export const FRAME_INDEX: Record<CharAnim, number> = { idle: 0, walk: 2, celebrate: 4, lose: 6, surprised: 7, run: 9, jump: 11, fall: 12 };
 export const FRAME_COUNT = 13;
+=======
+};
+export const ANIM_ORDER: CharAnim[] = ['idle', 'walk', 'celebrate', 'lose', 'surprised'];
+/** Índice do primeiro quadro de cada animação na spritesheet do Phaser. */
+export const FRAME_INDEX: Record<CharAnim, number> = { idle: 0, walk: 2, celebrate: 4, lose: 6, surprised: 7 };
+export const FRAME_COUNT = 9;
+>>>>>>> 89dd3df16bc6020c7711e0f3b84fc20dd55f6ec5
 
 export const SPRITE_W = 12;
 export const SPRITE_H = 16;
@@ -117,6 +129,7 @@ function composeRows(def: CharDef, anim: CharAnim, frame: number): { rows: strin
       rows = [BLANK, BLANK, ...sad.slice(0, 11), ...legs]; // murcha 2px
       break;
     }
+<<<<<<< HEAD
     case 'run':
       rows = [...upper, ...(frame % 2 === 0 ? def.legsB : def.legsA)];
       dy = frame % 2 === 0 ? 0 : -1; // fase de voo da passada
@@ -131,6 +144,8 @@ function composeRows(def: CharDef, anim: CharAnim, frame: number): { rows: strin
       rows = [...up, ...def.legsB];
       break;
     }
+=======
+>>>>>>> 89dd3df16bc6020c7711e0f3b84fc20dd55f6ec5
     case 'surprised': {
       const up = handsUp(upper);
       if (def.surpriseMouth) up[4 + def.surpriseMouth[0]] = def.surpriseMouth[1];

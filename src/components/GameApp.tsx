@@ -152,7 +152,11 @@ function Characters({ onBack }: { onBack: () => void }) {
           <div className="char-stage"><CharacterSprite id={sel} anim={anim} scale={11} label={info.name} /></div>
           <h3>{info.name} <span className="dim">· {info.title}</span></h3>
           <p>{info.blurb}</p>
+<<<<<<< HEAD
           <div className="seg-anim" role="radiogroup" aria-label="Animação">
+=======
+          <div className="seg seg-5" role="radiogroup" aria-label="Animação">
+>>>>>>> 89dd3df16bc6020c7711e0f3b84fc20dd55f6ec5
             {ANIM_ORDER.map((a) => <button key={a} role="radio" aria-checked={anim === a} className={anim === a ? 'on' : ''} onClick={() => { sfx.click(); setAnim(a); }}>{ANIMS[a].label}</button>)}
           </div>
         </div>

@@ -167,6 +167,7 @@ input[type='range'] { padding: 0; accent-color: var(--gold); }
 
 [data-reduce-motion='true'] .btn-menu::before { transition: none; }
 [data-reduce-motion='true'] .count, [data-reduce-motion='true'] .bar-fill { animation: none; }
+<<<<<<< HEAD
 
 .actionbtn { display: none; position: absolute; right: 14px; bottom: 14px; width: 96px; height: 96px; border-radius: 50%; font: inherit; font-weight: 700; font-size: 1.05rem; color: var(--ink); background: var(--gold); border: 4px solid var(--ink); box-shadow: 0 5px 0 var(--gold-lo); touch-action: none; user-select: none; place-items: center; }
 .actionbtn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--gold-lo); }
@@ -180,3 +181,5 @@ input[type='range'] { padding: 0; accent-color: var(--gold); }
 .dpad-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--gold-lo); }
 .dpad-btn.u { grid-column: 2; grid-row: 1; } .dpad-btn.l { grid-column: 1; grid-row: 2; } .dpad-btn.d { grid-column: 2; grid-row: 2; } .dpad-btn.r { grid-column: 3; grid-row: 2; }
 @media (pointer: coarse) { .dpad { display: grid; } }
+=======
+>>>>>>> 89dd3df16bc6020c7711e0f3b84fc20dd55f6ec5

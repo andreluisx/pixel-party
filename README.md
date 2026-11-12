@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # Pixel Party — Entrega 3 (Reflexo Relâmpago) sobre as Entregas 0, 1 e 2
+=======
+# Pixel Party — Entrega 1 (Menu, salas e lobby de 4 jogadores) sobre a Entrega 0
+>>>>>>> 89dd3df16bc6020c7711e0f3b84fc20dd55f6ec5
 
 Jogo de tabuleiro multiplayer em pixel art, até 4 jogadores; vagas sem humano são bots.
 
@@ -43,6 +47,7 @@ npm run smoke:room  # lobby: 4 humanos, sala cheia, personagens únicos, queda/r
 
 Novo minigame = um arquivo em `shared/minigames/`, uma linha em `shared/minigames/index.ts`, uma view em `src/game/views/`.
 
+<<<<<<< HEAD
 ## Entrega 3: Reflexo Relâmpago (`reflexo-relampago`)
 
 Teste em `/dev/minigames` escolhendo "Reflexo Relâmpago" na lista.
@@ -72,6 +77,8 @@ Teste em `/dev/minigames` (o minigame já vem selecionado). Crie a sala, abra ou
 - Personagens ganharam as animações de correr, pular e cair (veja em Personagens).
 - Testes: `tests/corrida.test.ts` (pista, física, pulo por borda, mola, queda, 100 corridas só com bots, dificuldade).
 
+=======
+>>>>>>> 89dd3df16bc6020c7711e0f3b84fc20dd55f6ec5
 ## Entrega 1: o que mudou
 
 - Menu animado (céu, nuvens, castelo, água, ilha, vaga-lumes), com música chiptune original e sons.

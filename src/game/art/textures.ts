@@ -38,7 +38,11 @@ function canvasTex(scene: Phaser.Scene, key: string, w: number, h: number, draw:
 
 // ---------- personagens: spritesheet com todas as animações (ver characters.ts) ----------
 function buildCharacter(scene: Phaser.Scene, id: CharacterId) {
+<<<<<<< HEAD
   const order: [CharAnim, number][] = [['idle', 0], ['idle', 1], ['walk', 0], ['walk', 1], ['celebrate', 0], ['celebrate', 1], ['lose', 0], ['surprised', 0], ['surprised', 1], ['run', 0], ['run', 1], ['jump', 0], ['fall', 0]];
+=======
+  const order: [CharAnim, number][] = [['idle', 0], ['idle', 1], ['walk', 0], ['walk', 1], ['celebrate', 0], ['celebrate', 1], ['lose', 0], ['surprised', 0], ['surprised', 1]];
+>>>>>>> 89dd3df16bc6020c7711e0f3b84fc20dd55f6ec5
   canvasTex(scene, `char-${id}`, FRAME_W * order.length, FRAME_H, (ctx) => {
     order.forEach(([anim, f], i) => ctx.drawImage(characterFrame(id, anim, f), i * FRAME_W, 0));
   }, { w: FRAME_W, count: order.length });
@@ -225,8 +229,11 @@ function buildReflexTextures(scene: Phaser.Scene) {
 }
 
 export function buildAllTextures(scene: Phaser.Scene) {
+<<<<<<< HEAD
   buildRaceTextures(scene);
   buildReflexTextures(scene);
+=======
+>>>>>>> 89dd3df16bc6020c7711e0f3b84fc20dd55f6ec5
   for (const id of CHARACTER_IDS) buildCharacter(scene, id);
   buildCoin(scene);
   buildRock(scene);
