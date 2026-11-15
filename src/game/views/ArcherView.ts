@@ -7,6 +7,7 @@ import { createRng } from '@shared/rng';
 import { FRAME_INDEX } from '../art/characters';
 import { num } from '../art/palette';
 import { sfx } from '../audio/sfx';
+import { NameTags } from './nameTags';
 import type { GameView, Pad, RenderCtx } from './GameView';
 import { PixelNumber, popup } from './pixelNumber';
 
@@ -40,7 +41,9 @@ export class ArcherView implements GameView {
   private lastSec = -1; private lastFlame = 0;
   private lastFeedId = 0; private feedItems: { n: PixelNumber; t0: number; w: number }[] = []; private banner: { n: PixelNumber; n2: PixelNumber } | null = null;
 
+  private tags: NameTags;
   constructor(private scene: Phaser.Scene, participants: ParticipantInfo[], private myId: string | null) {
+    this.tags = new NameTags(scene, participants, myId);
     scene.add.image(0, 0, 'archer-bg').setOrigin(0, 0).setDepth(0);
     this.clouds = scene.add.tileSprite(0, 20, W, 30, 'clouds').setOrigin(0, 0).setDepth(1).setAlpha(0.8);
     const rng = createRng(5);
@@ -118,6 +121,7 @@ export class ArcherView implements GameView {
 
   render(snap: Snapshot | null, ctx: RenderCtx) {
     if (!snap) return;
+    this.tags.begin(ctx);
     const s = snap.state as ArcherState;
     this.latest = s;
     this.myState = this.myId ? s.players[this.myId] ?? null : null;
@@ -202,6 +206,7 @@ export class ArcherView implements GameView {
       P.shadow.setPosition(px, py + 1).setVisible(a.alive && a.grounded).setAlpha(0.8);
       P.shield.setPosition(px, py - 8).setVisible(a.alive && a.shield).setAlpha(0.7 + 0.3 * Math.sin(t / 100)).setScale(1 + 0.05 * Math.sin(t / 130));
       P.marker.setPosition(px, py - 24 + Math.round(Math.sin(t / 200))).setVisible(a.alive);
+      this.tags.place(P.id, px, py - 28, a.alive);
 
       // pré-visualização da trajetória (só do meu arqueiro)
       if (mine && a.alive && ctx.phase === 'active') {

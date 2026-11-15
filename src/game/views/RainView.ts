@@ -6,6 +6,7 @@ import { AX0, AX1, AY0, AY1, R, isMoving, warnProgress, type RainState, type Roc
 import { num } from '../art/palette';
 import { sfx } from '../audio/sfx';
 import { FRAME_INDEX } from '../art/characters';
+import { NameTags } from './nameTags';
 import type { GameView, Pad, RenderCtx } from './GameView';
 import { PixelNumber, popup } from './pixelNumber';
 
@@ -29,7 +30,9 @@ export class RainView implements GameView {
   private timer!: PixelNumber;
   private lastSec = -1; private lastTrail = 0; private lastWarnBeep = 0;
 
+  private tags: NameTags;
   constructor(private scene: Phaser.Scene, participants: ParticipantInfo[], private myId: string | null) {
+    this.tags = new NameTags(scene, participants, myId);
     scene.add.image(0, 0, 'rain-bg').setOrigin(0, 0).setDepth(0);
     this.g = scene.add.graphics().setDepth(2);
     this.timer = new PixelNumber(scene, 240, 8, 3, 0xffffff, 50);
@@ -54,6 +57,7 @@ export class RainView implements GameView {
 
   render(snap: Snapshot | null, ctx: RenderCtx) {
     if (!snap) return;
+    this.tags.begin(ctx);
     const s = snap.state as RainState;
     const t = ctx.time;
     this.g.clear();
@@ -133,6 +137,7 @@ export class RainView implements GameView {
       sp.setPosition(px, py).setDepth(a.alive ? a.y : a.y - 5);
       P.shadow.setPosition(px, Math.round(a.y) + 4).setDepth(a.y - 1).setVisible(a.alive);
       P.marker.setPosition(px, py - 17 + Math.round(Math.sin(t / 200))).setVisible(a.alive);
+      this.tags.place(P.id, px, py - 21, a.alive);
       void mine;
 
       // placar

@@ -6,6 +6,7 @@ import { AX, AY, C, COLS, DIRS, MAX_ROUNDS, OBSTACLES, PHASE_MS, ROWS, SHOT_SPEE
 import { ANIMS, FRAME_INDEX, type CharAnim } from '../art/characters';
 import { num } from '../art/palette';
 import { sfx } from '../audio/sfx';
+import { NameTags } from './nameTags';
 import type { GameView, Pad, RenderCtx } from './GameView';
 import { PixelNumber, popup } from './pixelNumber';
 
@@ -37,7 +38,9 @@ export class DuelView implements GameView {
   private roundText!: PixelNumber; private dots: Phaser.GameObjects.Rectangle[] = [];
   private lastPhase = ''; private lastRound = 0; private dispInset = 0; private lastSec = -1; private lastMode = false;
 
+  private tags: NameTags;
   constructor(private scene: Phaser.Scene, participants: ParticipantInfo[], private myId: string | null) {
+    this.tags = new NameTags(scene, participants, myId);
     scene.add.rectangle(240, 135, 480, 270, 0x0e0820).setDepth(0);
     scene.add.rectangle(AX + ARENA_W / 2, AY + ARENA_H / 2, ARENA_W + 8, ARENA_H + 8, 0x1b1030).setStrokeStyle(2, 0x4ad8ff).setDepth(1);
     scene.add.tileSprite(AX, AY, ARENA_W, ARENA_H, 'floor-stone').setOrigin(0, 0).setDepth(2);
@@ -95,6 +98,7 @@ export class DuelView implements GameView {
 
   render(snap: Snapshot | null, ctx: RenderCtx) {
     if (!snap) return;
+    this.tags.begin(ctx);
     const s = snap.state as DuelState;
     const t = ctx.time;
     const ph = s.phase;
@@ -182,6 +186,7 @@ export class DuelView implements GameView {
       P.sprite.setVisible(true).setPosition(px, py).setDepth(12 + py / 1000).setAlpha(isGhost ? 0.35 : cloak ? 0.5 + 0.15 * Math.sin(t / 150) : 1);
       P.shadow.setVisible(true).setPosition(px, py + 4).setAlpha(isGhost ? 0.15 : cloak ? 0.4 : 0.9);
       P.marker.setVisible(!isGhost && (isMe || ph !== 'position')).setPosition(px, py - 17 + Math.round(Math.sin(t / 200)));
+      this.tags.place(P.id, px, py - 21, !isGhost);
       if (cloak && Math.floor(t / 160) % 2 === 0 && Math.random() < 0.5) { const sp = this.scene.add.image(px + (Math.random() - 0.5) * 14, py + 2, 'spark').setTint(0x4ad8ff).setDepth(31); this.scene.tweens.add({ targets: sp, y: sp.y - 12, alpha: 0, duration: 450, onComplete: () => sp.destroy() }); }
 
       // seta e linha de mira

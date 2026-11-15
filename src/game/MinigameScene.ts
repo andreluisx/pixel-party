@@ -2,6 +2,8 @@ import type Phaser from 'phaser';
 import type { BridgeClient } from '@/net/bridge';
 import { buildAllTextures } from './art/textures';
 import { buildBoardArt } from './art/boardArt';
+import { buildCorridaArt } from './art/corridaArt';
+import { buildFutebolArt } from './art/futebolArt';
 import { BoardView } from './views/BoardView';
 import type { GameView, Pad, PressKey } from './views/GameView';
 import { ArenaView } from './views/ArenaView';
@@ -12,6 +14,7 @@ import { DuelView } from './views/DuelView';
 import { PuzzleView } from './views/PuzzleView';
 import { ArcherView } from './views/ArcherView';
 import { RainView } from './views/RainView';
+import { FutebolView } from './views/FutebolView';
 
 export interface SceneBridge { client: BridgeClient; getDebug: () => boolean }
 
@@ -25,6 +28,7 @@ const VIEWS: Record<string, (scene: Phaser.Scene, ps: import('@shared/types').Pa
   'quebra-cabeca': (s, ps, me) => new PuzzleView(s, ps, me),
   'duelo-arqueiros': (s, ps, me) => new ArcherView(s, ps, me),
   'chuva-de-pedras': (s, ps, me) => new RainView(s, ps, me),
+  'futebol-botao': (s, ps, me) => new FutebolView(s, ps, me),
 };
 
 /** Cena genérica de minigame: constrói a view do minigame ativo, lê teclado/toque e envia inputs ao servidor. */
@@ -42,6 +46,8 @@ export function createMinigameSceneClass(PhaserLib: typeof Phaser, bridge: Scene
     create() {
       buildAllTextures(this);
       buildBoardArt(this);
+      buildCorridaArt(this);
+      buildFutebolArt(this);
       const kb = this.input.keyboard!;
       this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,SPACE,ENTER,SHIFT,F') as Record<string, Phaser.Input.Keyboard.Key>;
       this.cameras.main.setBackgroundColor('#1a1240');

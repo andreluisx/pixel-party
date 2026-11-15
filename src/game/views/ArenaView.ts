@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import type { Snapshot } from '@shared/protocol';
+import { NameTags } from './nameTags';
 import type { GameView, Pad, RenderCtx } from './GameView';
 import type { PTState } from '@shared/minigames/caca-moedas';
 import { ROCK_CELLS, TILE } from '@shared/minigames/caca-moedas';
@@ -19,7 +20,9 @@ export class ArenaView implements GameView {
   private lastTrail = 0;
   private debug = false;
 
+  private tags: NameTags;
   constructor(private scene: Phaser.Scene, private participants: ParticipantInfo[], private myId: string | null) {
+    this.tags = new NameTags(scene, participants, myId);
     scene.add.image(0, 0, 'arena-bg').setOrigin(0, 0).setDepth(0);
     for (const [c, r] of ROCK_CELLS) scene.add.image(c * TILE, r * TILE, 'rock').setOrigin(0, 0).setDepth(r * TILE + 10);
     for (const p of participants) {
@@ -37,6 +40,7 @@ export class ArenaView implements GameView {
   render(snap: Snapshot | null, ctx: RenderCtx) {
     const timeMs = ctx.time;
     if (!snap) return;
+    this.tags.begin(ctx);
     const s = snap.state as PTState;
     // moedas
     const alive = new Set<number>();
@@ -100,6 +104,7 @@ export class ArenaView implements GameView {
       v.sprite.setPosition(px, py).setDepth(p.y);
       v.shadow.setPosition(px, Math.round(p.y) + 4).setDepth(p.y - 1);
       v.marker.setPosition(px, py - 17 + Math.round(Math.sin(timeMs / 200) * 1));
+      this.tags.place(id, px, py - 21);
       v.hitbox.setPosition(p.x, p.y).setVisible(this.debug);
     }
   }

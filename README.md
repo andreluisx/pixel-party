@@ -118,6 +118,46 @@ Teste em `/dev/minigames` escolhendo "Reflexo Relâmpago" na lista.
 - **Correção importante**: nas Entregas 0 a 2, o laboratório cancelava o evento das setas e do espaço antes de o Phaser vê-lo, então só WASD funcionava (setas e Espaço eram ignorados). Agora o Phaser captura essas teclas só durante a partida.
 - Testes: `tests/reflexo.test.ts` (15 testes).
 
+## Entrega 19: Futebol de Botão (`futebol-botao`) — categoria cooperação
+
+Teste em `/dev/minigames` (agora o laboratório abre com o último minigame criado selecionado).
+
+- **Duplas:** os 4 jogadores são sorteados pela seed em AZUL (defende o gol da esquerda) e VERMELHO. Cada um controla uma peça. A vez alterna entre as equipes e, dentro da dupla, entre os parceiros. Depois de um gol, quem levou o gol joga primeiro.
+- **Sua jogada (até 5,5 s; estourou, a peça sai sozinha com força média):** aponte, **segure FORÇA** (Espaço, Enter ou botão na tela) e **solte** para lançar. A barra de força **sobe e desce sem parar** (um ciclo a cada 1,3 s), então dá para escolher o momento. Segurar o botão desde antes do turno não dispara sozinho.
+- **Direção:** mouse/toque (segure e arraste no campo: a seta aponta para o ponteiro), **← → / A D** giram a mira, **↑ / W** aponta para a bola e **↓ / S** para o gol adversário. A seta muda de tamanho e de cor (verde → amarelo → vermelho) com a força, e todos veem a seta e a barra de quem está jogando.
+- **Física:** círculos com atrito, colisões peça×peça e peça×bola (bola leve, ganha mais velocidade), quicadas nas bordas, traves e goleiros. A bola rola ~2 s. Peças não entram no gol.
+- **Goleiros:** um por gol, vão e voltam sozinhos dentro das traves (movimento senoidal previsível), defendem com a física da bola.
+- **Gols:** cada gol soma 1 ponto para a dupla. Gol contra vale para o adversário. Depois do gol: comemoração ("GOL!", confete, tremor), campo reinicia.
+- **Tempo e fim:** a partida tem **2 minutos**, mas **quem fizer 2 gols primeiro vence na hora**: depois da comemoração ("VITÓRIA!") o jogo acaba. Se o tempo acabar, vence quem tem mais gols (empate fica empatado); a jogada em andamento termina antes (máx. +5 s). Constantes `DURATION_MS` e `GOALS_TO_WIN`.
+- **Vitória:** 2 gols primeiro, ou mais gols no tempo; os dois da dupla recebem a mesma colocação (vencedores 7 moedas cada, perdedores 3 cada) e **+1 moeda por gol marcado** (bônus). Empate: todos dividem (5 cada).
+- **Multiplayer:** o servidor decide tudo (turno, força, física, gols). O cliente só envia `{turn, aim, snap, charge}`; o input de quem não tem a vez é ignorado.
+- **Bots:** testam jogadas na mesma física antes de chutar (mira na bola por trás na linha de um ponto do gol + variações), com erro de pontaria e reação por dificuldade. Em 30 partidas (4 bots): fácil ~0,5 gol/jogo, médio ~1,1, difícil ~2,0.
+- Arquivos: `shared/minigames/futebol-botao.ts`, `src/game/views/FutebolView.ts`, `src/game/art/futebolArt.ts`, `src/game/MinigameScene.ts`, `shared/minigames/index.ts`, `tests/futebol-botao.test.ts` (19 testes).
+
+## Entrega 18: Corrida Maluca mais clara (pássaro, túnel, pista por estruturas)
+
+- **Nunca mais trava:** depois de uma batida (caixa, túnel, barril, pássaro) o corredor fica ~1,1 s "fantasma" (piscando) e **atravessa** o obstáculo. Teste: parado em pé contra o túnel por 4 s, ele acaba passando.
+- **Túnel baixo (substitui a barra):** muro de pedra do céu até 9 px do chão, com abertura escura e borda amarela/preta embaixo e uma **seta amarela para baixo** pintada no muro. Não adianta pular (o muro vai até o céu). O corredor passa por trás do muro quando abaixado.
+- **Placas claras:** laranja com seta grande para baixo e o texto **ABAIXE** antes de cada túnel; azul com seta grande para cima e o texto **PULE** antes de cada buraco, lama e das duas primeiras caixas.
+- **Pássaro (para todos):** ao passar de um ponto da pista (mesmo ponto para todos), um pássaro nasce fora da tela e voa contra o corredor **na altura da cabeça** (faixa 8–15 px). Em pé: leva a batida. **Abaixado: passa por baixo.** **Pulando na hora certa (pés acima de 15 px quando ele cruza): passa por cima.** Cedo ou tarde demais: bate. Um "!" vermelho avisa na borda da tela enquanto ele não aparece. Dica na primeira vez ("PÁSSARO! ABAIXE (ou pule na hora)").
+- **Pista por estruturas prontas ("prefabs"):** cada estrutura tem faixa da pista onde pode aparecer, peso e custo de dificuldade; a seed sorteia. Regras: sem perigo igual duas vezes seguidas, sem duas estruturas difíceis seguidas (custo somado ≤ 4), sem duas de abaixar seguidas, pássaro com trecho livre de 210 px só dele, espaço para pousar entre estruturas, caixa "?" a cada ~430 px, e os primeiros trechos ensinam na ordem: caixa, túnel, pássaro, seta, lama, caixa "?", buraco. Testado em 200 seeds.
+- **Bots:** abaixam para o pássaro (erram conforme a dificuldade). Em 40 seeds: difícil termina ~97% (mediana ~19,5 s), médio ~93% (~23,6 s), fácil ~75% (~24,3 s).
+- Arquivos: `shared/minigames/corrida-maluca.ts`, `src/game/views/CorridaView.ts`, `src/game/art/corridaArt.ts`, `tests/corrida.test.ts` (24 testes).
+
+## Entrega 17: Corrida Maluca turbinada
+
+Teste em `/dev/minigames` (o minigame já vem selecionado).
+
+- **Abaixar (↓ / S; no celular, joystick para baixo):** barras listradas penduradas na pista só passam abaixado. Em pé ou pulando você bate (tropeça). Abaixado você anda um pouco mais devagar, e há moedas embaixo das barras. No ar, apertar ↓ faz cair mais rápido.
+- **Lama:** deixa lento (metade da velocidade) enquanto você pisa; pule por cima.
+- **Setas de impulso:** pisar dá turbo de ~1 s, sem apertar nada.
+- **Caixa "?":** pegue andando ou pulando; o item é usado na hora (funciona no celular, que só tem um botão): **turbo forte**, **escudo** (absorve a próxima batida; bolha azul) ou **ataque** (um barril aparece na pista do rival mais próximo à frente, com placa vermelha de aviso). Quem está na frente tende a ganhar escudo; quem está atrás, turbo ou ataque. Sorteio determinístico (hash da seed), sem estado novo no cliente.
+- **Clareza para quem joga pela primeira vez:** os primeiros trechos ensinam uma mecânica por vez (caixa, barra, seta, lama, caixa "?", buraco); placa amarela antes de cada barra; dica na tela só na primeira ocorrência de cada coisa ("ABAIXE! Tecla ↓ ou S"); aviso flutuante ao pegar itens; posição 1º–4º em cada pista; linhas de velocidade no turbo; tela de instruções atualizada.
+- **Novos trechos:** barras duplas, abaixar-e-pular, seta + buraco, lama + caixa. Sempre há uma caixa "?" a cada ~430 px.
+- **Bots:** abaixam nas barras (erram com a taxa de erro da dificuldade), desviam de barris, evitam lama (fácil nunca, médio 40%, difícil 85%). Quem levou a batida deixa de ignorar o perigo. Em 40 seeds: difícil termina ~93% (mediana ~19,7 s), médio ~73% (~23,8 s), fácil ~40% (~24,6 s).
+- Protocolo: o input agora é `{run, jump, duck?}` (`duck` opcional, padrão falso). O servidor continua autoritativo.
+- Arquivos: `shared/minigames/corrida-maluca.ts`, `src/game/views/CorridaView.ts`, `src/game/art/corridaArt.ts` (novo), `src/game/MinigameScene.ts`, `tests/corrida.test.ts` (20 testes, 7 novos).
+
 ## Entrega 2: Corrida Maluca (`corrida-maluca`)
 
 Teste em `/dev/minigames` (o minigame já vem selecionado). Crie a sala, abra outras abas para mais humanos; o resto vira bot.
@@ -127,7 +167,7 @@ Teste em `/dev/minigames` (o minigame já vem selecionado). Crie a sala, abra ou
 - Obstáculos: caixas (batida = tropeço e perde velocidade), buracos (cai, reaparece antes dele depois de ~1 s), plataformas, buraco largo com degrau, e o **atalho da mola**, que lança por cima de um trecho cheio de caixas.
 - Moedas dão impulso de velocidade. A pista fica mais difícil conforme avança.
 - Vence quem cruza a linha primeiro; os demais têm mais 6 s. Quem não chega é ordenado pela distância. Recompensa 8/6/4/3 (empate divide).
-- Tudo é simulado no servidor (30 Hz). O cliente só envia `{run, jump}`.
+- Tudo é simulado no servidor (30 Hz). O cliente só envia `{run, jump, duck}`.
 - Bots: fácil erra o tempo do pulo e não acelera, médio acelera nos buracos largos, difícil acelera sempre. A mola é escolhida por probabilidade (10% / 50% / 90%).
 - Personagens ganharam as animações de correr, pular e cair (veja em Personagens).
 - Testes: `tests/corrida.test.ts` (pista, física, pulo por borda, mola, queda, 100 corridas só com bots, dificuldade).
@@ -279,3 +319,8 @@ Partida jogável de ponta a ponta: 1 a 4 humanos + bots, 12 rodadas, um minigame
 - **Moedas no lugar de "pontos de destaque":** a moeda é a pontuação que vale no tabuleiro, então os abates agora rendem moedas: **+1 por abate** e **+1 extra no ÚLTIMO HIT**, somadas à recompensa da colocação (8/6/4/3). Não mudam a colocação nem desfazem empates. O cartão do jogador mostra caveira (abates), alvo (acertos) e moeda (bônus acumulado).
 - **Vida inicial = 3 corações** (máx. 4 com o item de vida extra).
 - **Tutorial e resultado responsivos:** os cartões sobre a arena usam unidades relativas ao tamanho do palco (fonte, espaços e largura encolhem junto) e rolam por dentro se ainda assim não couberem.
+
+## Entrega 20 — Nomes sobre os personagens (todos os minigames)
+- Novo `src/game/views/nameTags.ts` (`NameTags`): o nome de cada jogador aparece sobre o personagem (cor do slot) e some com fade depois de 5 s de partida (a contagem já mostra). Usado por Corrida, Reflexo, Caça-moedas, Piso LED, Último Disparo, Duelo, Chuva de Pedras e Futebol (que reexibe os nomes depois de cada gol).
+- Futebol: removidos os rótulos fixos; usa as mesmas etiquetas temporárias.
+- O "Jogador" no Lab era só o nome padrão do campo do laboratório; agora o Lab usa o nome salvo no jogo (`pixel-party:name`) quando existir. Em partidas reais já valia o nome escolhido.

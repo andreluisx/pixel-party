@@ -6,6 +6,7 @@ import { ARENA_X, ARENA_Y, COLOR_HEX, COLOR_NAMES, COLS, MAX_ROUNDS, ROWS, TILE,
 import { ANIMS, FRAME_INDEX, type CharAnim } from '../art/characters';
 import { num } from '../art/palette';
 import { sfx } from '../audio/sfx';
+import { NameTags } from './nameTags';
 import type { GameView, Pad, RenderCtx } from './GameView';
 import { PixelNumber } from './pixelNumber';
 
@@ -41,7 +42,9 @@ export class LedFloorView implements GameView {
   private lastSecond = -1;
   private lastPhase = '';
 
+  private tags: NameTags;
   constructor(private scene: Phaser.Scene, participants: ParticipantInfo[], private myId: string | null) {
+    this.tags = new NameTags(scene, participants, myId);
     scene.add.rectangle(240, 135, 480, 270, 0x0e0820).setDepth(0);
     // moldura neon da arena
     scene.add.rectangle(ARENA_X + (COLS * TILE) / 2, ARENA_Y + (ROWS * TILE) / 2, COLS * TILE + 8, ROWS * TILE + 8, 0x1b1030).setStrokeStyle(2, 0x4ad8ff).setDepth(1);
@@ -106,6 +109,7 @@ export class LedFloorView implements GameView {
 
   render(snap: Snapshot | null, ctx: RenderCtx) {
     if (!snap) return;
+    this.tags.begin(ctx);
     const s = snap.state as LedPublic;
     const t = ctx.time;
     const T = timesFor(s.round);
@@ -167,6 +171,7 @@ export class LedFloorView implements GameView {
       P.sprite.setPosition(px, py).setDepth(12 + py / 1000);
       P.shadow.setPosition(px, py + 4);
       P.marker.setPosition(px, py - 17 + Math.round(Math.sin(t / 200)));
+      this.tags.place(P.id, px, py - 21);
       const tile = tileAt(pl.x, pl.y);
       const showHl = pl.alive && ph !== 'judge' && ph !== 'over' && tile >= 0;
       P.hl.setVisible(showHl);

@@ -6,6 +6,7 @@ import type { ReflexState } from '@shared/minigames/reflexo-relampago';
 import { ANIMS, FRAME_INDEX, type CharAnim } from '../art/characters';
 import { num } from '../art/palette';
 import { sfx } from '../audio/sfx';
+import { NameTags } from './nameTags';
 import type { GameView, Pad, RenderCtx } from './GameView';
 import { PixelNumber, popup } from './pixelNumber';
 
@@ -32,7 +33,9 @@ export class ReflexView implements GameView {
   private k = 0;
   private lastNo = 0;
 
+  private tags: NameTags;
   constructor(private scene: Phaser.Scene, participants: ParticipantInfo[], private myId: string | null) {
+    this.tags = new NameTags(scene, participants, myId);
     const sorted = [...participants].sort((a, b) => a.slot - b.slot);
     sorted.forEach((p, i) => {
       const x0 = LEFT + i * (PW + GAP);
@@ -65,6 +68,7 @@ export class ReflexView implements GameView {
 
   render(snap: Snapshot | null, ctx: RenderCtx) {
     if (!snap) return;
+    this.tags.begin(ctx);
     const st = snap.state as ReflexState;
     const t = ctx.time;
     const a = st.active;
@@ -137,6 +141,7 @@ export class ReflexView implements GameView {
       else if (t < P.flashUntil) anim = P.flashAnim;
       const info = ANIMS[anim];
       P.sprite.setFrame(FRAME_INDEX[anim] + (info.frames > 1 ? Math.floor((t / 1000) * info.fps) % info.frames : 0));
+      this.tags.place(P.id, P.cx, 26);
     }
   }
 

@@ -122,8 +122,9 @@ export function Lab() {
   const debugRef = useRef(false);
   const [debug, setDebug] = useState(false);
   const [name, setName] = useState('Jogador');
+  useEffect(() => { try { const n = localStorage.getItem('pixel-party:name'); if (n) setName(n); } catch { /* ok */ } }, []);
   const [code, setCode] = useState('');
-  const [minigameId, setMinigameId] = useState(MINIGAME_LIST[0]!.id);
+  const [minigameId, setMinigameId] = useState(MINIGAME_LIST[MINIGAME_LIST.length - 1]!.id);
   const [difficulty, setDifficulty] = useState<BotDifficulty>('medium');
   const [seed, setSeed] = useState('');
   const [sim, setSim] = useState<{ result: MinigameResult; rewards: Record<string, number>; ticks: number; players: ParticipantInfo[] } | null>(null);
