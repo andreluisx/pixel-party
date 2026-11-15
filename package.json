@@ -11,7 +11,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "smoke": "tsx tests/smoke.ts",
-    "smoke:room": "tsx tests/smoke-room.ts"
+    "smoke:room": "tsx tests/smoke-room.ts",
+    "smoke:duel": "tsx tests/smoke-duel.ts",
+    "smoke:game": "tsx tests/smoke-game.ts",
+    "sim:games": "tsx scripts/sim-games.ts"
   },
   "keywords": [],
   "author": "",

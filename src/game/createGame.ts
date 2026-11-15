@@ -1,11 +1,11 @@
-import type { LabClient } from '@/net/labClient';
+import type { BridgeClient } from '@/net/bridge';
 import { createMinigameSceneClass } from './MinigameScene';
 
 export const INTERNAL_W = 480;
 export const INTERNAL_H = 270;
 
 /** Cria o Phaser com renderização pixel-perfect (resolução interna fixa, escala proporcional, sem suavização). */
-export async function createGame(parent: HTMLElement, client: LabClient, getDebug: () => boolean) {
+export async function createGame(parent: HTMLElement, client: BridgeClient, getDebug: () => boolean) {
   const Phaser = (await import('phaser')).default;
   const Scene = createMinigameSceneClass(Phaser, { client, getDebug });
   const game = new Phaser.Game({
@@ -21,5 +21,6 @@ export async function createGame(parent: HTMLElement, client: LabClient, getDebu
     input: { keyboard: { capture: [] } },
     scene: [Scene],
   });
+  (window as unknown as { __phaserGame?: unknown }).__phaserGame = game; // depuração e testes automatizados
   return game;
 }

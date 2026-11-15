@@ -59,7 +59,7 @@ export class ReflexView implements GameView {
   setDebug() { /* sem hitboxes neste minigame */ }
 
   readInput(pad: Pad) {
-    for (const key of pad.pressed) { this.n++; this.k = KEY_TO_SYMBOL[key]; }
+    for (const key of pad.pressed) { if (key === 'A') continue; this.n++; this.k = KEY_TO_SYMBOL[key]; }
     return { k: this.k, n: this.n };
   }
 

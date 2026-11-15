@@ -1,0 +1,53 @@
+// Último Disparo contra o servidor REAL com 2 humanos: invisibilidade por jogador e mesmo resultado para todos.
+import { io, type Socket } from 'socket.io-client';
+const URL = process.env.URL ?? 'http://localhost:3001';
+const fail = (m: string): never => { console.error('FALHOU:', m); process.exit(1); };
+const ok = (m: string) => console.log('ok  -', m);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const call = (s: Socket, ev: string, payload: unknown) => new Promise<any>((res) => s.emit(ev, payload, res));
+
+(async () => {
+  const a = io(URL), b = io(URL);
+  const snaps = { a: [] as any[], b: [] as any[] };
+  a.on('mg:snapshot', (s) => snaps.a.push(s)); b.on('mg:snapshot', (s) => snaps.b.push(s));
+  let ra: any = null, rb: any = null;
+  a.on('mg:result', (r) => (ra = r)); b.on('mg:result', (r) => (rb = r));
+  const c1: any = await call(a, 'lab:create', { name: 'Ana', minigameId: 'ultimo-disparo', difficulty: 'medium' });
+  const c2: any = await call(b, 'lab:join', { code: c1.lobby.code, name: 'Beto' });
+  if (!c1.ok || !c2.ok) fail('sala');
+  const idA = c1.you as string, idB = c2.you as string;
+  a.emit('lab:start');
+  // Ana ajusta mira no modo mira; Beto anda
+  let n = 0;
+  const tick = setInterval(() => { n++; a.emit('mg:input', { seq: n, input: { dx: 1, dy: 1, aim: true } }); b.emit('mg:input', { seq: n, input: { dx: 1, dy: 0, aim: false } }); }, 60);
+  const wait = async (cond: () => boolean, ms: number) => { const t0 = Date.now(); while (!cond() && Date.now() - t0 < ms) await sleep(50); return cond(); };
+  const last = (arr: any[]) => arr[arr.length - 1];
+  if (!(await wait(() => last(snaps.a)?.state.phase === 'position' && last(snaps.b)?.state.phase === 'position', 20000))) fail('nunca chegou ao posicionamento');
+  await sleep(400);
+  const sa = last(snaps.a).state, sb = last(snaps.b).state;
+  if (sa.players[idB].x > -500) fail('Ana recebeu a posição de Beto durante o posicionamento!');
+  if (sb.players[idA].x > -500) fail('Beto recebeu a posição de Ana durante o posicionamento!');
+  if (sa.players[idA].x < 0 || sb.players[idB].x < 0) fail('cada um deveria ver a si mesmo');
+  const hiddenEverywhere = JSON.stringify(snaps.a.filter((s) => s.state.phase === 'position').map((s) => s.state.players[idB].x)).includes('-1000');
+  ok('durante o posicionamento cada humano recebe só a própria posição (o outro vem como -1000)');
+  if (!hiddenEverywhere) fail('vazamento em algum snapshot');
+  if (sa.players[idA].aim !== 3 || !sa.players[idA].aimMode) fail('modo mira de Ana não foi registrado pelo servidor: aim=' + sa.players[idA].aim);
+  ok('servidor registrou o modo mira e a mira diagonal (↘) de Ana');
+  if (!(await wait(() => last(snaps.a)?.state.phase === 'reveal' && last(snaps.b)?.state.phase === 'reveal', 20000))) fail('sem revelação');
+  await sleep(200);
+  const ra1 = last(snaps.a).state, rb1 = last(snaps.b).state;
+  if (ra1.players[idB].x < 0 || rb1.players[idA].x < 0) fail('na revelação os dois deveriam aparecer');
+  if (Math.abs(ra1.players[idB].x - rb1.players[idB].x) > 3 || Math.abs(ra1.players[idA].y - rb1.players[idA].y) > 3) fail('os dois clientes veem posições diferentes na revelação');
+  ok('revelação simultânea: os dois aparecem e os dois clientes concordam nas posições');
+  clearInterval(tick);
+  if (!(await wait(() => last(snaps.a)?.state.phase === 'fire' && last(snaps.a).state.shots.length > 0, 10000))) fail('sem disparos');
+  const shotsA = JSON.stringify(last(snaps.a).state.shots);
+  await sleep(300);
+  const shotsB = JSON.stringify(last(snaps.b).state.shots);
+  if (shotsA !== shotsB) fail('trajetórias diferentes entre clientes');
+  ok('trajetórias dos disparos idênticas para todos (calculadas no servidor)');
+  if (!(await wait(() => ra && rb, 120000))) fail('sem resultado final');
+  if (JSON.stringify(ra) !== JSON.stringify(rb)) fail('resultados diferentes');
+  ok('resultado final igual para os dois: ' + JSON.stringify(ra.result.ranking.map((r: any) => `${r.rank}º:${r.score}`)) + ' recompensas ' + JSON.stringify(Object.values(ra.rewards)));
+  console.log('SMOKE DUEL OK'); process.exit(0);
+})();

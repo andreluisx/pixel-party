@@ -1,6 +1,9 @@
 import type { BotDifficulty, ParticipantInfo, PlayerId, Slot } from '../shared/types';
 import type { RoomPhase, RoomState } from '../shared/protocol';
 import type { IO, Sock } from './labRoom';
+import { Match } from './match';
+import { store, summarize } from './store';
+import type { Intent } from '../shared/game/engine';
 import { canStart, emptyLobby, freeBotSlot, pickCharacter, releaseSlot, seatHuman, setBotDifficulty } from '../shared/lobby';
 
 const GRACE_MS = 30_000; // tempo para o humano voltar antes de a vaga virar bot (no lobby)
@@ -15,6 +18,9 @@ export class GameRoom {
   private sockets = new Map<PlayerId, Sock>();
   private grace = new Map<PlayerId, NodeJS.Timeout>();
   private emptyTimer: NodeJS.Timeout | null = null;
+  match: Match | null = null;
+  /** PIXEL_PARTY_FAST=1: tempos curtos e minigames simulados (só para testes) */
+  private fast = process.env.PIXEL_PARTY_FAST === '1';
   onEmpty: () => void = () => {};
 
   constructor(private io: IO, readonly code: string) {}
@@ -55,6 +61,7 @@ export class GameRoom {
     this.participants = this.participants.map((x) => (x.id === id ? { ...x, connected: true } : x));
     this.bind(id, sock);
     this.broadcast();
+    this.match?.resync(sock);
     return { ok: true };
   }
 
@@ -130,17 +137,29 @@ export class GameRoom {
     const can = canStart(this.participants);
     if (!can.ok) { this.sockets.get(by)?.emit('room:error', can.reason); return; }
     this.phase = 'started';
+    this.match = new Match({
+      io: this.io, channel: this.channel(), seed: Math.floor(Math.random() * 1e9),
+      participants: () => this.participants, socketOf: (id) => this.sockets.get(id),
+      timeScale: this.fast ? 0.01 : Number(process.env.PIXEL_PARTY_SCALE) || 1,
+      onFinal: (g) => { try { store.save(summarize(this.code, g)); } catch { /* persistência é opcional */ } },
+    });
     this.broadcast();
+    this.match.start();
   }
 
   backToLobby(by: PlayerId) {
     if (by !== this.hostId || this.phase !== 'started') return;
+    this.match?.dispose(); this.match = null;
     this.phase = 'lobby';
     this.participants = this.participants.map((p) => (p.isBot ? p : { ...p, ready: false }));
     this.broadcast();
   }
 
+  game(id: PlayerId, intent: Intent) { this.match?.handle(id, intent); }
+  handleInput(id: PlayerId, seq: number, raw: unknown) { this.match?.handleInput(id, seq, raw); }
+
   dispose() {
+    this.match?.dispose();
     this.grace.forEach(clearTimeout);
     if (this.emptyTimer) clearTimeout(this.emptyTimer);
   }

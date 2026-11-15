@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type Phaser from 'phaser';
 import { LabClient, type LabState } from '@/net/labClient';
+import type { BridgeClient } from '@/net/bridge';
 import { createGame } from '@/game/createGame';
 import { sfx } from '@/game/audio/sfx';
 import type { BotDifficulty, ParticipantInfo } from '@shared/types';
@@ -9,10 +10,10 @@ import { SLOT_COLORS } from '@shared/types';
 import type { MinigameResult } from '@shared/minigame';
 import { MINIGAME_LIST } from '@shared/minigames';
 
-const EMPTY: LabState = { connected: false, you: null, lobby: null, intro: null, countdown: null, result: null, error: null, snapsPerSec: 0 };
+const EMPTY: LabState = { connected: false, you: null, lobby: null, intro: null, countdown: null, result: null, error: null, snapsPerSec: 0, aimMode: false };
 const DIFFS: { id: BotDifficulty; label: string }[] = [{ id: 'easy', label: 'Fácil' }, { id: 'medium', label: 'Médio' }, { id: 'hard', label: 'Difícil' }];
 
-function RobotIcon() {
+export function RobotIcon() {
   return (
     <svg className="bot-icon" viewBox="0 0 12 12" aria-label="bot" shapeRendering="crispEdges">
       <rect x="5" y="0" width="2" height="2" fill="#f5b83d" /><rect x="2" y="2" width="8" height="6" fill="#9a97ad" />
@@ -36,7 +37,7 @@ function PlayerChip({ p, you, host }: { p: ParticipantInfo; you: boolean; host: 
   );
 }
 
-function ResultTable({ result, rewards, players, you, format }: { result: MinigameResult; rewards: Record<string, number>; players: ParticipantInfo[]; you: string | null; format?: (n: number) => string }) {
+export function ResultTable({ result, rewards, players, you, format }: { result: MinigameResult; rewards: Record<string, number>; players: ParticipantInfo[]; you: string | null; format?: (n: number) => string }) {
   const name = (id: string) => players.find((p) => p.id === id);
   if (result.kind !== 'ranking') return <p>Resultado cooperativo: {result.success ? 'missão cumprida' : 'missão falhou'}</p>;
   return (
@@ -50,6 +51,7 @@ function ResultTable({ result, rewards, players, you, format }: { result: Miniga
             <span className="rank-name">{p?.name ?? r.playerId}{p?.isBot && <RobotIcon />}</span>
             <span className="rank-score">{format ? format(r.score) : `${r.score} pts`}</span>
             <span className="rank-coins">+{rewards[r.playerId] ?? 0}</span>
+            {result.details?.[r.playerId] && <small className="rank-detail">{result.details[r.playerId]}</small>}
           </li>
         );
       })}
@@ -57,7 +59,7 @@ function ResultTable({ result, rewards, players, you, format }: { result: Miniga
   );
 }
 
-function TouchPad({ client }: { client: LabClient }) {
+export function TouchPad({ client }: { client: BridgeClient }) {
   const ref = useRef<HTMLDivElement>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
   const update = (e: React.PointerEvent) => {
@@ -67,9 +69,9 @@ function TouchPad({ client }: { client: LabClient }) {
     const len = Math.hypot(vx, vy) || 1;
     const k = Math.min(1, len);
     setKnob({ x: (vx / len) * k * 32, y: (vy / len) * k * 32 });
-    client.touch = { ...client.touch, dx: Math.abs(vx) > 0.3 ? (vx > 0 ? 1 : -1) : 0, dy: Math.abs(vy) > 0.3 ? (vy > 0 ? 1 : -1) : 0 };
+    client.touch = { ...client.touch, dx: Math.abs(vx) > 0.3 ? (vx > 0 ? 1 : -1) : 0, dy: Math.abs(vy) > 0.3 ? (vy > 0 ? 1 : -1) : 0, run: Math.abs(vx) > 0.85 };
   };
-  const end = () => { setKnob({ x: 0, y: 0 }); client.touch = { ...client.touch, dx: 0, dy: 0 }; };
+  const end = () => { setKnob({ x: 0, y: 0 }); client.touch = { ...client.touch, dx: 0, dy: 0, run: false }; };
   return (
     <div ref={ref} className="touchpad" onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); update(e); }}
       onPointerMove={(e) => { if (e.buttons) update(e); }} onPointerUp={end} onPointerCancel={end} aria-label="Joystick virtual">
@@ -78,7 +80,7 @@ function TouchPad({ client }: { client: LabClient }) {
   );
 }
 
-function ActionButton({ client, label }: { client: LabClient; label: string }) {
+export function ActionButton({ client, label }: { client: BridgeClient; label: string }) {
   const set = (v: boolean) => { client.touch = { ...client.touch, action: v }; };
   return (
     <button className="actionbtn" aria-label={label} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); set(true); }}
@@ -86,7 +88,24 @@ function ActionButton({ client, label }: { client: LabClient; label: string }) {
   );
 }
 
-function DPad({ client }: { client: LabClient }) {
+export function FireButton({ client, label }: { client: BridgeClient; label: string }) {
+  const set = (v: boolean) => { client.touch = { ...client.touch, fire: v }; };
+  return (
+    <button className="firebtn" aria-label={label} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); set(true); }}
+      onPointerUp={() => set(false)} onPointerCancel={() => set(false)} onContextMenu={(e) => e.preventDefault()}>{label}</button>
+  );
+}
+
+export function ModeToggle({ client, aim, locked }: { client: BridgeClient; aim: boolean; locked: boolean }) {
+  return (
+    <button className={`modebtn ${aim ? 'mode-aim' : 'mode-move'}${locked ? ' mode-locked' : ''}`} disabled={locked} aria-pressed={aim} onPointerDown={(e) => { e.preventDefault(); if (locked) return; sfx.click(); client.toggleAim(); }} onContextMenu={(e) => e.preventDefault()}>
+      <span className="mode-ico" aria-hidden="true">{aim ? '◎' : '✥'}</span>
+      <span className="mode-txt"><b>{locked ? 'TRAVADO' : aim ? 'MODO MIRA' : 'MODO MOVER'}</b><small>{locked ? 'aguarde a próxima rodada' : aim ? 'parado · setas giram a mira' : 'setas andam · toque p/ mirar'}</small></span>
+    </button>
+  );
+}
+
+export function DPad({ client }: { client: BridgeClient }) {
   const btn = (k: 'L' | 'U' | 'D' | 'R', label: string, cls: string) => (
     <button className={`dpad-btn ${cls}`} aria-label={label} onPointerDown={(e) => { e.preventDefault(); client.touchPresses.push(k); }} onContextMenu={(e) => e.preventDefault()}>{label}</button>
   );
@@ -109,7 +128,7 @@ export function Lab() {
   const [seed, setSeed] = useState('');
   const [sim, setSim] = useState<{ result: MinigameResult; rewards: Record<string, number>; ticks: number; players: ParticipantInfo[] } | null>(null);
   const [simError, setSimError] = useState<string | null>(null);
-  const [hud, setHud] = useState<{ t: number; scores: Record<string, number> }>({ t: 0, scores: {} });
+  const [hud, setHud] = useState<{ t: number; text?: string; locked?: boolean; scores: Record<string, number> }>({ t: 0, scores: {} });
 
   useEffect(() => { debugRef.current = debug; }, [debug]);
 
@@ -137,7 +156,7 @@ export function Lab() {
     if (!client) return;
     const id = setInterval(() => {
       const s = client.latest;
-      if (s) setHud({ t: s.timeLeftMs, scores: s.scores });
+      if (s) setHud({ t: s.timeLeftMs, text: s.hudText, locked: s.locked, scores: s.scores });
     }, 100);
     return () => clearInterval(id);
   }, [client]);
@@ -190,7 +209,7 @@ export function Lab() {
               </label>
               <label className="field">Minigame
                 <select value={minigameId} onChange={(e) => setMinigameId(e.target.value)}>
-                  {MINIGAME_LIST.map((m) => <option key={m.id} value={m.id}>{m.name}{m.id === 'pipeline-test' ? ' (provisório)' : ''}</option>)}
+                  {MINIGAME_LIST.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
               </label>
               <div className="field">Dificuldade dos bots
@@ -260,9 +279,9 @@ export function Lab() {
             {!lobby && <div className="overlay center"><p className="overlay-msg">Crie uma sala para ver a arena.<br />Vagas sem jogador viram bots automaticamente.</p></div>}
             {lobby && phase === 'lobby' && <div className="overlay center"><p className="overlay-msg">{meta?.name}<br /><span className="dim">Aguardando início</span></p></div>}
 
-            {phase === 'active' && (
+            {phase === 'active' && !meta?.hideHud && (
               <div className="hud">
-                <div className="hud-time">{Math.ceil(hud.t / 1000)}</div>
+                <div className="hud-time">{hud.text ?? Math.ceil(hud.t / 1000)}</div>
                 <ul className="hud-scores">
                   {players.map((p) => (
                     <li key={p.id} style={{ borderColor: SLOT_COLORS[p.slot] }} className={p.id === st.you ? 'me' : ''}>
@@ -297,9 +316,11 @@ export function Lab() {
             )}
             {client && phase === 'active' && meta?.instructions.touch?.stick !== false && <TouchPad client={client} />}
             {client && phase === 'active' && meta?.instructions.touch?.dpad && <DPad client={client} />}
+            {client && phase === 'active' && meta?.instructions.touch?.fire && <FireButton client={client} label={meta.instructions.touch.fire} />}
+            {client && phase === 'active' && meta?.instructions.touch?.aimToggle && <ModeToggle client={client} aim={st.aimMode} locked={!!hud.locked} />}
             {client && phase === 'active' && meta?.instructions.touch?.action && <ActionButton client={client} label={meta.instructions.touch.action} />}
           </div>
-          <p className="hint under">{meta ? meta.instructions.controls.map((c) => `${c.keys}: ${c.action}`).join(' · ') : 'Controles: WASD ou setas.'} · No celular: joystick e botão na tela.</p>
+          <p className="hint under">{meta ? meta.instructions.controls.map((c) => `${c.keys}: ${c.action}`).join(' · ') : 'Controles: WASD ou setas.'} · No celular: {meta?.instructions.touch?.dpad ? 'botões de direção' : meta?.instructions.touch?.stick === false ? 'toque direto nas peças' : 'joystick'}{meta?.instructions.touch?.action ? ` e botão ${meta.instructions.touch.action}` : ''}{meta?.instructions.touch?.fire ? ` e ${meta.instructions.touch.fire}` : ''} na tela.</p>
         </section>
       </div>
     </div>

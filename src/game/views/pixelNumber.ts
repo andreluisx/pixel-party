@@ -13,6 +13,7 @@ export class PixelNumber {
     if (text === this.text) return;
     this.text = text;
     this.c.removeAll(true);
+    const color = this.tint;
     const adv = 4 * this.scale;
     const total = text.length * adv - this.scale;
     [...text].forEach((ch, i) => {
@@ -20,9 +21,11 @@ export class PixelNumber {
       if (f < 0) return;
       const x = -total / 2 + i * adv;
       this.c.add(this.scene.add.image(x + this.scale, this.scale, 'digits', f).setOrigin(0, 0).setScale(this.scale).setTint(0x1b1030));
-      this.c.add(this.scene.add.image(x, 0, 'digits', f).setOrigin(0, 0).setScale(this.scale).setTint(this.tint));
+      this.c.add(this.scene.add.image(x, 0, 'digits', f).setOrigin(0, 0).setScale(this.scale).setTint(color));
     });
   }
+  /** Troca a cor do texto (a sombra escura continua). */
+  setColor(color: number) { this.c.list.forEach((o, i) => { if (i % 2 === 1) (o as Phaser.GameObjects.Image).setTint(color); }); this.tint = color; }
   setPosition(x: number, y: number) { this.c.setPosition(x, y); }
   destroy() { this.c.destroy(); }
 }

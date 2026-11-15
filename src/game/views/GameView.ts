@@ -3,8 +3,8 @@ import type { Snapshot } from '@shared/protocol';
 import type { ParticipantInfo } from '@shared/types';
 
 /** Estado dos controles já unificado (teclado + toque) que a cena entrega para o minigame. */
-export type PressKey = 'L' | 'U' | 'D' | 'R';
-export interface Pad { dx: number; dy: number; action: boolean; /** direções apertadas neste quadro (evento, não estado) */ pressed: PressKey[] }
+export type PressKey = 'L' | 'U' | 'D' | 'R' | 'A'; // A = Espaço/Enter (evento)
+export interface Pad { dx: number; dy: number; action: boolean; /** botão MIRAR ligado (alternância) */ aim: boolean; /** Shift segurado / joystick no máximo */ run: boolean; /** F ou botão ATIRAR (toque) */ fire: boolean; /** direções apertadas neste quadro (evento, não estado) */ pressed: PressKey[] }
 
 export interface RenderCtx { phase: string; myId: string | null; time: number }
 

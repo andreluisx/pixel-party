@@ -12,9 +12,10 @@ import { loadSettings, settingsStore, updateSettings } from '@/game/settings';
 import { sfx } from '@/game/audio/sfx';
 import { CharacterSprite } from './CharacterSprite';
 import { MenuBackdrop } from './MenuBackdrop';
+import { MatchStage } from './MatchStage';
 
 type Screen = 'menu' | 'create' | 'join' | 'characters' | 'settings';
-const EMPTY: RoomClientState = { connected: false, you: null, room: null, error: null };
+const EMPTY: RoomClientState = { connected: false, you: null, room: null, error: null, intro: null, countdown: null, result: null, aimMode: false, lobby: null, game: null, toast: null };
 const DIFFS: { id: BotDifficulty; label: string }[] = [{ id: 'easy', label: 'Fácil' }, { id: 'medium', label: 'Médio' }, { id: 'hard', label: 'Difícil' }];
 
 function RobotIcon() {
@@ -86,7 +87,7 @@ export function GameApp() {
 
       <main className="shell">
         {room && client ? (
-          room.phase === 'lobby' ? <Lobby client={client} st={st} room={room} /> : <Started client={client} st={st} room={room} />
+          room.phase === 'lobby' ? <Lobby client={client} st={st} room={room} /> : <MatchStage client={client} st={st} room={room} />
         ) : screen === 'menu' ? (
           <div className="menu">
             <Logo />
@@ -152,11 +153,7 @@ function Characters({ onBack }: { onBack: () => void }) {
           <div className="char-stage"><CharacterSprite id={sel} anim={anim} scale={11} label={info.name} /></div>
           <h3>{info.name} <span className="dim">· {info.title}</span></h3>
           <p>{info.blurb}</p>
-<<<<<<< HEAD
           <div className="seg-anim" role="radiogroup" aria-label="Animação">
-=======
-          <div className="seg seg-5" role="radiogroup" aria-label="Animação">
->>>>>>> 89dd3df16bc6020c7711e0f3b84fc20dd55f6ec5
             {ANIM_ORDER.map((a) => <button key={a} role="radio" aria-checked={anim === a} className={anim === a ? 'on' : ''} onClick={() => { sfx.click(); setAnim(a); }}>{ANIMS[a].label}</button>)}
           </div>
         </div>
@@ -282,29 +279,5 @@ function Lobby({ client, st, room }: { client: RoomClient; st: RoomClientState; 
         </section>
       )}
     </div>
-  );
-}
-
-// ---------------------------------------------------------------- Partida iniciada (provisório até o tabuleiro)
-function Started({ client, st, room }: { client: RoomClient; st: RoomClientState; room: RoomState }) {
-  const isHost = room.hostId === st.you;
-  return (
-    <section className="panel wide started">
-      <h2>Partida iniciada!</h2>
-      <ul className="started-row">
-        {room.participants.map((p) => (
-          <li key={p.slot} style={{ ['--c' as string]: SLOT_COLORS[p.slot] }}>
-            <CharacterSprite id={p.characterId as CharacterId} anim="celebrate" scale={5} />
-            <span>{p.name}{p.isBot && <RobotIcon />}</span>
-          </li>
-        ))}
-      </ul>
-      <p>O tabuleiro jogável chega nas próximas entregas. Por enquanto, a sala já está pronta com 4 participantes. Teste os minigames no laboratório.</p>
-      <div className="actions">
-        <Link className="btn btn-gold" href="/dev/minigames">Abrir laboratório de minigames</Link>
-        {isHost && <button className="btn" onClick={() => { sfx.click(); client.backToLobby(); }}>Voltar ao lobby</button>}
-        <button className="btn" onClick={() => { sfx.click(); client.leave(); }}>Sair da sala</button>
-      </div>
-    </section>
   );
 }

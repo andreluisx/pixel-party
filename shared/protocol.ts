@@ -1,5 +1,6 @@
 import type { BotDifficulty, ParticipantInfo, PlayerId, Slot } from './types';
 import type { MinigameMeta, MinigameResult } from './minigame';
+import type { Awaiting, GameState, GEvent, Intent } from './game/engine';
 
 export type LabPhase = 'lobby' | 'intro' | 'countdown' | 'active' | 'result';
 
@@ -19,7 +20,7 @@ export interface LabLobby {
   matchNo: number;
 }
 
-export interface Snapshot { tick: number; timeLeftMs: number; scores: Record<PlayerId, number>; state: unknown }
+export interface Snapshot { tick: number; timeLeftMs: number; scores: Record<PlayerId, number>; hudText?: string; locked?: boolean; state: unknown }
 
 export interface ResultPayload {
   rewardEventId: string; // id único: a recompensa só pode ser aplicada uma vez
@@ -37,6 +38,9 @@ export interface RoomState {
   board: { id: string; name: string };
   startBlockedReason: string | null; // null = pode iniciar
 }
+
+export type PublicGame = Omit<GameState, 'rng' | 'appliedRewards'>;
+export interface GameUpdate { seq: number; game: PublicGame; events: GEvent[]; waiting: Awaiting | null }
 
 export type Ack<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -60,6 +64,13 @@ export interface ClientToServerEvents {
   'room:start': () => void;
   'room:backToLobby': () => void;
   'room:leave': () => void;
+
+  // ---- partida no tabuleiro ----
+  'game:roll': () => void;
+  'game:choose': (tile: string) => void;
+  'game:buy': (yes: boolean) => void;
+  /** Qualquer ação do tabuleiro (itens, loja, teleporte, duelo...). O servidor valida tudo. */
+  'game:act': (intent: Intent) => void;
 }
 
 export interface ServerToClientEvents {
@@ -71,6 +82,8 @@ export interface ServerToClientEvents {
   'lab:error': (msg: string) => void;
   'room:state': (s: RoomState) => void;
   'room:error': (msg: string) => void;
+  'game:update': (u: GameUpdate) => void;
+  'game:error': (msg: string) => void;
 }
 
 // Dados anexados ao socket pelo servidor.

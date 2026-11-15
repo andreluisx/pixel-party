@@ -3,14 +3,18 @@ import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '../shared/protocol';
 import { LabRoom, type Sock } from './labRoom';
 import { GameRoom } from './gameRoom';
+import { store } from './store';
 import { getMinigame, MINIGAME_LIST } from '../shared/minigames';
 import { makeBotProfile } from '../shared/bots';
 import { simulateMatch } from '../shared/sim';
 import type { ParticipantInfo, Slot } from '../shared/types';
+import type { Intent } from '../shared/game/engine';
+import type { ItemId } from '../shared/game/items';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const http = createServer((req, res) => {
   if (req.url === '/health') { res.writeHead(200, { 'content-type': 'application/json' }); res.end('{"ok":true}'); return; }
+  if (req.url === '/matches') { res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*' }); res.end(JSON.stringify(store.recent(20))); return; }
   res.writeHead(404); res.end();
 });
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(http, { cors: { origin: true } });
@@ -22,6 +26,25 @@ function newCode(): string {
   for (;;) {
     const c = Array.from({ length: 5 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join('');
     if (!rooms.has(c) && !gameRooms.has(c)) return c;
+  }
+}
+const ITEM_SET = new Set(['cogumelo', 'ima', 'pocao', 'escudo', 'dado']);
+/** Só formatos conhecidos passam; o motor ainda valida vez, fase, posse e alvo. */
+function sanitizeIntent(i: unknown): Intent | null {
+  if (!i || typeof i !== 'object') return null;
+  const o = i as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === 'string' && v.length < 24 ? v : undefined);
+  switch (o.kind) {
+    case 'roll': return { kind: 'roll' };
+    case 'choose': { const t = str(o.tile); return t ? { kind: 'choose', tile: t } : null; }
+    case 'buy': return { kind: 'buy', yes: o.yes === true };
+    case 'item': return ITEM_SET.has(o.item as string) ? { kind: 'item', item: o.item as ItemId, target: str(o.target), tile: str(o.tile), value: typeof o.value === 'number' ? o.value : undefined } : null;
+    case 'shopBuy': return ITEM_SET.has(o.item as string) ? { kind: 'shopBuy', item: o.item as ItemId } : null;
+    case 'shopLeave': return { kind: 'shopLeave' };
+    case 'pickDie': return typeof o.value === 'number' ? { kind: 'pickDie', value: o.value } : null;
+    case 'teleport': { const t = str(o.tile); return t ? { kind: 'teleport', tile: t } : null; }
+    case 'duel': return { kind: 'duel', target: str(o.target) ?? null };
+    default: return null;
   }
 }
 const cleanName = (n?: string) => (n ?? '').toString().trim().slice(0, 14);
@@ -57,7 +80,7 @@ io.on('connection', (socket: Sock) => {
   socket.on('lab:setConfig', (cfg) => roomOf()?.setConfig(socket.data.playerId, cfg ?? {}));
   socket.on('lab:start', () => roomOf()?.start(socket.data.playerId));
   socket.on('lab:restart', () => roomOf()?.start(socket.data.playerId));
-  socket.on('mg:input', (p) => { if (p) roomOf()?.handleInput(socket.data.playerId, Number(p.seq), p.input); });
+  socket.on('mg:input', (p) => { if (!p) return; roomOf()?.handleInput(socket.data.playerId, Number(p.seq), p.input); gameRoomOf()?.handleInput(myId(), Number(p.seq), p.input); });
   socket.on('disconnect', () => { roomOf()?.leave(socket); gameRoomOf()?.disconnect(socket); });
 
   // ---------- sala de jogo (lobby) ----------
@@ -92,6 +115,10 @@ io.on('connection', (socket: Sock) => {
   socket.on('room:setBot', (p) => { if (p) gameRoomOf()?.setBot(myId(), p.slot, p.difficulty); });
   socket.on('room:start', () => gameRoomOf()?.start(myId()));
   socket.on('room:backToLobby', () => gameRoomOf()?.backToLobby(myId()));
+  socket.on('game:roll', () => gameRoomOf()?.game(myId(), { kind: 'roll' }));
+  socket.on('game:choose', (tile) => gameRoomOf()?.game(myId(), { kind: 'choose', tile: String(tile) }));
+  socket.on('game:buy', (yes) => gameRoomOf()?.game(myId(), { kind: 'buy', yes: !!yes }));
+  socket.on('game:act', (i) => { const s = sanitizeIntent(i); if (s) gameRoomOf()?.game(myId(), s); });
   socket.on('room:leave', () => gameRoomOf()?.leave(socket));
 
   // Simulação acelerada, só com bots, sem sala nem relógio.

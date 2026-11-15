@@ -12,6 +12,8 @@ export interface LabState {
   result: ResultPayload | null;
   error: string | null;
   snapsPerSec: number;
+  /** Alternância MOVER/MIRAR (Último Disparo): vive no cliente e vai junto de cada input. */
+  aimMode: boolean;
 }
 
 type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -23,11 +25,11 @@ export class LabClient {
   private listeners = new Set<() => void>();
   private snapCount = 0;
   private snapTimer: ReturnType<typeof setInterval> | null = null;
-  state: LabState = { connected: false, you: null, lobby: null, intro: null, countdown: null, result: null, error: null, snapsPerSec: 0 };
+  state: LabState = { connected: false, you: null, lobby: null, intro: null, countdown: null, result: null, error: null, snapsPerSec: 0, aimMode: false };
 
   // Lidos pela cena Phaser a cada frame (não passam pelo React).
   latest: Snapshot | null = null;
-  touch = { dx: 0, dy: 0, action: false };
+  touch = { dx: 0, dy: 0, action: false, fire: false, run: false };
   touchPresses: Array<'L' | 'U' | 'D' | 'R'> = [];
   private seq = 0;
   private lastSent = '';
@@ -51,7 +53,7 @@ export class LabClient {
       if (lobby.phase === 'lobby') { patch.intro = null; patch.countdown = null; patch.result = null; this.latest = null; }
       this.set(patch);
     });
-    s.on('mg:intro', (intro) => { this.latest = null; this.set({ intro, result: null, countdown: null }); });
+    s.on('mg:intro', (intro) => { this.latest = null; this.set({ intro, result: null, countdown: null, aimMode: false }); });
     s.on('mg:countdown', (n) => this.set({ countdown: n }));
     s.on('mg:snapshot', (snap) => { this.latest = snap; this.snapCount++; this.onSnapshotEvents.forEach((f) => f(snap)); });
     s.on('mg:result', (result) => this.set({ result, countdown: null }));
@@ -96,6 +98,7 @@ export class LabClient {
   simulate(cfg: Partial<LabConfig>) {
     return new Promise<Parameters<Parameters<ClientToServerEvents['lab:simulate']>[1]>[0]>((res) => this.socket.emit('lab:simulate', cfg, res));
   }
+  toggleAim() { this.set({ aimMode: !this.state.aimMode }); }
   dismissError() { this.set({ error: null }); }
 
   /** Chamado pela cena a cada frame; só envia quando muda (ou a cada 100 ms como batimento). */

@@ -198,7 +198,13 @@ export class LabRoom {
 
   private emitSnapshot() {
     const def = this.def!;
-    this.io.to(this.room()).emit('mg:snapshot', { tick: this.tick, timeLeftMs: def.timeLeftMs(this.state), scores: def.liveScores(this.state), state: def.publicState ? def.publicState(this.state as never) : this.state });
+    const base = { tick: this.tick, timeLeftMs: def.timeLeftMs(this.state), scores: def.liveScores(this.state), hudText: def.hudText?.(this.state as never), locked: def.inputLocked?.(this.state as never) };
+    if (def.viewFor) {
+      // estado filtrado por jogador (ex.: invisibilidade): cada um recebe só o que pode ver
+      for (const [id, sock] of this.sockets) sock.emit('mg:snapshot', { ...base, state: def.viewFor(this.state as never, id) });
+      return;
+    }
+    this.io.to(this.room()).emit('mg:snapshot', { ...base, state: def.publicState ? def.publicState(this.state as never) : this.state });
   }
 
   private finish() {

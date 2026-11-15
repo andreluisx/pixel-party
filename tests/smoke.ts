@@ -8,7 +8,7 @@ const a = io(URL), b = io(URL), c = io(URL);
 const emit = <T>(s: typeof a, ev: string, payload: unknown) => new Promise<T>((res) => (s as any).emit(ev, payload, res));
 
 (async () => {
-  const r1: any = await emit(a, 'lab:create', { name: 'Ana', minigameId: 'pipeline-test', difficulty: 'hard' });
+  const r1: any = await emit(a, 'lab:create', { name: 'Ana', minigameId: 'caca-moedas', difficulty: 'hard' });
   if (!r1.ok) fail('create');
   const code = r1.lobby.code;
   ok(`sala criada ${code}, 4 slots, ${r1.lobby.participants.filter((p: any) => p.isBot).length} bots`);
@@ -36,7 +36,7 @@ const emit = <T>(s: typeof a, ev: string, payload: unknown) => new Promise<T>((r
   b.disconnect(); // queda no meio: bot assume
   ok('humano desconectou durante a partida (bot assume)');
   clearInterval(iv);
-  await new Promise<void>((res) => { const t = setInterval(() => { if (result) { clearInterval(t); res(); } }, 200); setTimeout(() => res(), 30000); });
+  await new Promise<void>((res) => { const t = setInterval(() => { if (result) { clearInterval(t); res(); } }, 200); setTimeout(() => res(), 60000); });
   if (!result) fail('sem resultado');
   if (countdown.join() !== '3,2,1,0') fail('contagem: ' + countdown.join());
   ok(`contagem ${countdown.join('-')}; ${snaps} snapshots; resultado único (${rewardsMsgs}x)`);

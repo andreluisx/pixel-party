@@ -13,7 +13,11 @@ export interface SimOutcome<S = unknown> {
 }
 
 export function computeRewards(result: MinigameResult, players: ParticipantInfo[]): Record<PlayerId, number> {
-  if (result.kind === 'ranking') return rewardsForRanking(result.ranking);
+  if (result.kind === 'ranking') {
+    const out = rewardsForRanking(result.ranking);
+    for (const [id, extra] of Object.entries(result.bonus ?? {})) if (id in out) out[id] = out[id]! + extra;
+    return out;
+  }
   const out: Record<PlayerId, number> = {};
   for (const p of players) out[p.id] = result.success ? 6 + Math.min(3, Math.round(result.contribution[p.id] ?? 0)) : 0;
   return out;

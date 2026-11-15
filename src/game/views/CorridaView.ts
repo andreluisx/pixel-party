@@ -64,7 +64,7 @@ export class CorridaView implements GameView {
       }
       sc.add.tileSprite(cursor, base + GY, TRACK_LENGTH + 700 - cursor, 10, 'ground').setOrigin(0, 0).setDepth(3);
 
-      for (const pl of track.platforms) sc.add.tileSprite(pl.x, base + GY - pl.h, pl.w, 6, 'plank').setOrigin(0, 0).setDepth(4);
+      for (const pl of track.platforms) sc.add.tileSprite(pl.x, base + GY - pl.h, pl.w, 16, 'plank').setOrigin(0, 0).setDepth(4);
       for (const c of track.crates) sc.add.image(c.x, base + GY, 'crate').setOrigin(0.5, 1).setDepth(5);
       for (const s of track.springs) sc.add.image(s.x, base + GY, 'spring').setOrigin(0.5, 1).setDepth(5);
       const coins = new Map<number, Phaser.GameObjects.Sprite>();

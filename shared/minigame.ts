@@ -4,7 +4,8 @@ import type { RankEntry } from './rewards';
 export type MinigameCategory = 'speed' | 'reaction' | 'skill' | 'survival' | 'memory' | 'logic' | 'combat' | 'coop';
 
 export type MinigameResult =
-  | { kind: 'ranking'; ranking: RankEntry[] }
+  /** `bonus`: moedas extras por destaque (somadas às da colocação, sem mudar o ranking). `details`: linha de estatísticas por jogador. */
+  | { kind: 'ranking'; ranking: RankEntry[]; bonus?: Record<PlayerId, number>; details?: Record<PlayerId, string>; /** eliminações feitas por jogador (alimenta os prêmios da Grande Final) */ kills?: Record<PlayerId, number> }
   | { kind: 'coop'; success: boolean; contribution: Record<PlayerId, number> };
 
 export interface ControlHint { keys: string; action: string }
@@ -14,7 +15,7 @@ export interface MinigameInstructions {
   lines: string[];
   controls: ControlHint[];
   /** Controles de toque: joystick e/ou botão de ação (rótulo). */
-  touch?: { stick: boolean; action?: string; dpad?: boolean };
+  touch?: { stick: boolean; action?: string; fire?: string; dpad?: boolean; aimToggle?: boolean };
 }
 
 /** Um "cérebro" de bot para um minigame. Vê o mesmo estado que um humano veria. */
@@ -29,12 +30,20 @@ export interface MinigameDefinition<S = unknown, I = unknown> {
   mode: 'ffa' | 'coop';
   durationMs: number;
   instructions: MinigameInstructions;
+  /** O visual já mostra placar/estado; o laboratório não sobrepõe o HUD padrão. */
+  hideHud?: boolean;
   /** Unidade exibida ao lado do placar ao vivo (ex.: '%'). */
   hudUnit?: string;
   /** Como mostrar a pontuação no resultado (ex.: tempo de corrida). Padrão: "N pts". */
   formatScore?(score: number): string;
+  /** Controles bloqueados agora (ex.: botão de modo fica desabilitado na revelação). */
+  inputLocked?(state: S): boolean;
+  /** Texto no lugar do cronômetro do HUD (ex.: "R3" para rodada 3). */
+  hudText?(state: S): string;
   /** Versão do estado enviada aos clientes (esconde segredos, ex.: o gerador aleatório). */
   publicState?(state: S): unknown;
+  /** Versão do estado enviada a UM jogador (esconde o que só ele não pode ver, ex.: posições invisíveis). */
+  viewFor?(state: S, viewer: PlayerId): unknown;
   /** Input neutro (ninguém tocando). */
   neutralInput(): I;
   /** Valida input vindo do cliente. Retorna null se for inválido. */
@@ -53,6 +62,7 @@ export interface MinigameDefinition<S = unknown, I = unknown> {
 
 export interface MinigameMeta {
   hudUnit?: string;
+  hideHud?: boolean;
   id: string;
   name: string;
   category: MinigameCategory;
@@ -62,5 +72,5 @@ export interface MinigameMeta {
 }
 
 export function metaOf(def: MinigameDefinition<any, any>): MinigameMeta {
-  return { id: def.id, name: def.name, category: def.category, mode: def.mode, durationMs: def.durationMs, instructions: def.instructions, hudUnit: def.hudUnit };
+  return { id: def.id, name: def.name, category: def.category, mode: def.mode, durationMs: def.durationMs, instructions: def.instructions, hudUnit: def.hudUnit, hideHud: def.hideHud };
 }

@@ -1,19 +1,22 @@
 import type Phaser from 'phaser';
 import type { Snapshot } from '@shared/protocol';
 import type { GameView, Pad, RenderCtx } from './GameView';
-import type { PTState } from '@shared/minigames/pipeline-test';
-import { ROCK_CELLS, TILE } from '@shared/minigames/pipeline-test';
+import type { PTState } from '@shared/minigames/caca-moedas';
+import { ROCK_CELLS, TILE } from '@shared/minigames/caca-moedas';
 import type { ParticipantInfo } from '@shared/types';
 import { SLOT_COLORS } from '@shared/types';
 import { num } from '../art/palette';
 import { sfx } from '../audio/sfx';
 import { FRAME_INDEX } from '../art/characters';
 
-/** Visual da Arena de Teste. Só desenha o que o servidor mandou. */
+/** Visual do Caça-Moedas. Só desenha o que o servidor mandou. */
 export class ArenaView implements GameView {
   private players = new Map<string, { sprite: Phaser.GameObjects.Sprite; shadow: Phaser.GameObjects.Image; marker: Phaser.GameObjects.Image; hitbox: Phaser.GameObjects.Rectangle; tx: number; ty: number; moving: boolean }>();
   private coins = new Map<number, Phaser.GameObjects.Sprite>();
   private coinData = new Map<number, { x: number; y: number; value: number }>();
+  private items = new Map<number, Phaser.GameObjects.Sprite>();
+  private prevBoost = new Map<string, number>();
+  private lastTrail = 0;
   private debug = false;
 
   constructor(private scene: Phaser.Scene, private participants: ParticipantInfo[], private myId: string | null) {
@@ -61,6 +64,16 @@ export class ArenaView implements GameView {
       const me = this.myId ? this.players.get(this.myId) : null;
       if (me && Math.hypot(me.tx - d.x, me.ty - d.y) < 14) (d.value === 3 ? sfx.bigCoin() : sfx.coin());
     }
+    // Bota Veloz
+    const liveItems = new Set<number>();
+    for (const it of s.items) {
+      liveItems.add(it.id);
+      let spr = this.items.get(it.id);
+      if (!spr) { spr = this.scene.add.sprite(it.x, it.y, 'boot').setDepth(it.y + 5); this.items.set(it.id, spr); this.scene.tweens.add({ targets: spr, scale: { from: 0.2, to: 1 }, duration: 220, ease: 'Back.easeOut' }); }
+      spr.y = it.y + Math.round(Math.sin(timeMs / 220 + it.id) * 1.5);
+    }
+    for (const [id, spr] of this.items) if (!liveItems.has(id)) { this.items.delete(id); this.sparkle(spr.x, spr.y, true); spr.destroy(); }
+    const best = Math.max(...s.order.map((id) => s.players[id]!.score));
     // jogadores
     for (const id of s.order) {
       const p = s.players[id]!;
@@ -73,8 +86,16 @@ export class ArenaView implements GameView {
       v.sprite.y += (p.y - v.sprite.y) * k;
       v.moving = p.dx !== 0 || p.dy !== 0;
       if (p.dx !== 0) v.sprite.setFlipX(p.dx < 0);
-      const bob = v.moving ? (Math.floor(timeMs / 130) % 2) : 0;
-      v.sprite.setFrame(v.moving ? FRAME_INDEX.walk + bob : FRAME_INDEX.idle + (Math.floor(timeMs / 500) % 2));
+      const bob = v.moving ? (Math.floor(timeMs / (p.boostMs > 0 ? 80 : 120)) % 2) : 0;
+      const result = ctx.phase === 'result';
+      if (result) v.sprite.setFrame(p.score === best && best > 0 ? FRAME_INDEX.celebrate + (Math.floor(timeMs / 200) % 2) : FRAME_INDEX.lose);
+      else v.sprite.setFrame(v.moving ? FRAME_INDEX.run + bob : FRAME_INDEX.idle + (Math.floor(timeMs / 500) % 2));
+      // bota: brilho azul e rastro de poeira
+      const was = this.prevBoost.get(id) ?? 0;
+      if (p.boostMs > 0 && was <= 0 && id === this.myId) sfx.spring();
+      this.prevBoost.set(id, p.boostMs);
+      v.sprite.setTint(p.boostMs > 0 && Math.floor(timeMs / 120) % 2 ? 0x9ad0ff : 0xffffff);
+      if (p.boostMs > 0 && v.moving && timeMs - this.lastTrail > 60) { this.lastTrail = timeMs; const tr = this.scene.add.image(p.x, p.y + 3, 'spark').setTint(0x9ad0ff).setDepth(p.y - 2); this.scene.tweens.add({ targets: tr, alpha: 0, scale: 2, duration: 260, onComplete: () => tr.destroy() }); }
       const px = Math.round(v.sprite.x), py = Math.round(v.sprite.y) - (v.moving && bob ? 1 : 0);
       v.sprite.setPosition(px, py).setDepth(p.y);
       v.shadow.setPosition(px, Math.round(p.y) + 4).setDepth(p.y - 1);
