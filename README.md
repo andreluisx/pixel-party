@@ -324,3 +324,8 @@ Partida jogável de ponta a ponta: 1 a 4 humanos + bots, 12 rodadas, um minigame
 - Novo `src/game/views/nameTags.ts` (`NameTags`): o nome de cada jogador aparece sobre o personagem (cor do slot) e some com fade depois de 5 s de partida (a contagem já mostra). Usado por Corrida, Reflexo, Caça-moedas, Piso LED, Último Disparo, Duelo, Chuva de Pedras e Futebol (que reexibe os nomes depois de cada gol).
 - Futebol: removidos os rótulos fixos; usa as mesmas etiquetas temporárias.
 - O "Jogador" no Lab era só o nome padrão do campo do laboratório; agora o Lab usa o nome salvo no jogo (`pixel-party:name`) quando existir. Em partidas reais já valia o nome escolhido.
+
+## Entrega 21 — Ajustes de celular e renascimento (Corrida / Duelo de Arqueiros)
+- Corrida Maluca: botão **ABAIXAR** na tela (ao lado do PULAR) e, ao cair no buraco, o corredor renasce ~78 px antes dele, em chão firme e longe de obstáculos (`safeRespawnX`), com tempo para tomar impulso e pular.
+- Duelo de Arqueiros (celular): 2 analógicos — esquerdo anda/corre, direito **mira e atira ao soltar** — e botão PULAR logo ao lado do analógico de mira. O ponteiro do canvas é ignorado no celular nesse jogo. No PC nada muda.
+- Novos campos de toque: `instructions.touch.duck` / `.twin`; componentes `AimStick` e `DuckButton` em `src/components/Lab.tsx`.

@@ -337,7 +337,7 @@ export const dueloArqueiros: MinigameDefinition<ArcherState, ArcherInput> = {
       { keys: 'Espaço / W', action: 'pular' },
       { keys: 'Mouse / F', action: 'mirar e atirar (F = mira assistida)' },
     ],
-    touch: { stick: true, action: 'PULAR', fire: 'ATIRAR' },
+    touch: { stick: true, action: 'PULAR', twin: true },
   },
   neutralInput: () => ({ dx: 0, jump: false, run: false, fire: false, aim: 0 }),
   sanitizeInput(raw) {

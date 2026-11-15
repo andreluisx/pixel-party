@@ -80,10 +80,46 @@ export function TouchPad({ client }: { client: BridgeClient }) {
   );
 }
 
-export function ActionButton({ client, label }: { client: BridgeClient; label: string }) {
+/** Analógico de mira (direito): segurar aponta, soltar atira. */
+export function AimStick({ client }: { client: BridgeClient }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [knob, setKnob] = useState({ x: 0, y: 0 });
+  const last = useRef<number | null>(null);
+  const update = (e: React.PointerEvent) => {
+    const r = ref.current!.getBoundingClientRect();
+    const vx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2), vy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+    const len = Math.hypot(vx, vy) || 1;
+    const k = Math.min(1, len);
+    setKnob({ x: (vx / len) * k * 32, y: (vy / len) * k * 32 });
+    last.current = len > 0.3 ? Math.atan2(vy, vx) : last.current;
+    client.touch = { ...client.touch, aimAngle: len > 0.3 ? Math.atan2(vy, vx) : client.touch.aimAngle };
+  };
+  const end = () => {
+    setKnob({ x: 0, y: 0 });
+    const a = last.current;
+    last.current = null;
+    client.touch = { ...client.touch, aimAngle: null, shotAngle: a, shotUntil: a === null ? 0 : performance.now() + 140 };
+  };
+  return (
+    <div ref={ref} className="touchpad aimstick" onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); last.current = null; update(e); }}
+      onPointerMove={(e) => { if (e.buttons) update(e); }} onPointerUp={end} onPointerCancel={end} onContextMenu={(e) => e.preventDefault()} aria-label="Analógico de mira: solte para atirar">
+      <div className="touchpad-knob aim-knob" style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }} />
+    </div>
+  );
+}
+
+export function DuckButton({ client, label }: { client: BridgeClient; label: string }) {
+  const set = (v: boolean) => { client.touch = { ...client.touch, duck: v }; };
+  return (
+    <button className="actionbtn duckbtn" aria-label={label} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); set(true); }}
+      onPointerUp={() => set(false)} onPointerCancel={() => set(false)} onContextMenu={(e) => e.preventDefault()}>{label}</button>
+  );
+}
+
+export function ActionButton({ client, label, beside }: { client: BridgeClient; label: string; beside?: boolean }) {
   const set = (v: boolean) => { client.touch = { ...client.touch, action: v }; };
   return (
-    <button className="actionbtn" aria-label={label} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); set(true); }}
+    <button className={`actionbtn${beside ? ' beside-aim' : ''}`} aria-label={label} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); set(true); }}
       onPointerUp={() => set(false)} onPointerCancel={() => set(false)} onContextMenu={(e) => e.preventDefault()}>{label}</button>
   );
 }
@@ -319,9 +355,11 @@ export function Lab() {
             {client && phase === 'active' && meta?.instructions.touch?.dpad && <DPad client={client} />}
             {client && phase === 'active' && meta?.instructions.touch?.fire && <FireButton client={client} label={meta.instructions.touch.fire} />}
             {client && phase === 'active' && meta?.instructions.touch?.aimToggle && <ModeToggle client={client} aim={st.aimMode} locked={!!hud.locked} />}
-            {client && phase === 'active' && meta?.instructions.touch?.action && <ActionButton client={client} label={meta.instructions.touch.action} />}
+            {client && phase === 'active' && meta?.instructions.touch?.twin && <AimStick client={client} />}
+            {client && phase === 'active' && meta?.instructions.touch?.duck && <DuckButton client={client} label={meta.instructions.touch.duck} />}
+            {client && phase === 'active' && meta?.instructions.touch?.action && <ActionButton client={client} label={meta.instructions.touch.action} beside={!!meta.instructions.touch.twin} />}
           </div>
-          <p className="hint under">{meta ? meta.instructions.controls.map((c) => `${c.keys}: ${c.action}`).join(' · ') : 'Controles: WASD ou setas.'} · No celular: {meta?.instructions.touch?.dpad ? 'botões de direção' : meta?.instructions.touch?.stick === false ? 'toque direto nas peças' : 'joystick'}{meta?.instructions.touch?.action ? ` e botão ${meta.instructions.touch.action}` : ''}{meta?.instructions.touch?.fire ? ` e ${meta.instructions.touch.fire}` : ''} na tela.</p>
+          <p className="hint under">{meta ? meta.instructions.controls.map((c) => `${c.keys}: ${c.action}`).join(' · ') : 'Controles: WASD ou setas.'} · No celular: {meta?.instructions.touch?.twin ? 'esquerdo anda, direito mira (solte para atirar)' : meta?.instructions.touch?.dpad ? 'botões de direção' : meta?.instructions.touch?.stick === false ? 'toque direto nas peças' : 'joystick'}{meta?.instructions.touch?.action ? ` e botão ${meta.instructions.touch.action}` : ''}{meta?.instructions.touch?.fire ? ` e ${meta.instructions.touch.fire}` : ''} na tela.</p>
         </section>
       </div>
     </div>

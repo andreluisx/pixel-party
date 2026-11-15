@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AIR_TIME, BASE_SPEED, BIRD_WINDOW, corridaMaluca as def, generateTrack, JUMP_VY, TRACK_LENGTH, getTrack, type CorridaInput, type CorridaState } from '../shared/minigames/corrida-maluca';
+import { RESPAWN_BACK, safeRespawnX, AIR_TIME, BASE_SPEED, BIRD_WINDOW, corridaMaluca as def, generateTrack, JUMP_VY, TRACK_LENGTH, getTrack, type CorridaInput, type CorridaState } from '../shared/minigames/corrida-maluca';
 import { simulateMatch, TICK_MS } from '../shared/sim';
 import { makeBotProfile } from '../shared/bots';
 import type { ParticipantInfo, Slot } from '../shared/types';
@@ -320,5 +320,33 @@ describe('bots na corrida', () => {
     const a = simulateMatch(def, players(), 9);
     const b = simulateMatch(def, players(), 9);
     expect(a.result).toEqual(b.result);
+  });
+});
+
+describe('renascer depois de cair', () => {
+  it('nasce bem antes do buraco, em chão firme e longe de obstáculos (várias pistas)', () => {
+    for (let seed = 1; seed <= 80; seed++) {
+      const tr = getTrack(seed);
+      for (const h of tr.holes) {
+        const x = safeRespawnX(tr, h.x);
+        expect(x).toBeGreaterThanOrEqual(24);
+        expect(x).toBeLessThanOrEqual(h.x - 10);
+        expect(tr.holes.some((o) => x > o.x + 3 && x < o.x + o.w - 3)).toBe(false);
+        expect(tr.crates.some((c) => Math.abs(c.x - x) < 26)).toBe(false);
+        if (h.x - RESPAWN_BACK >= 24 + 14 * 12) expect(h.x - x).toBeGreaterThanOrEqual(RESPAWN_BACK - 1);
+      }
+    }
+  });
+
+  it('quem cai no buraco renasce atrás dele com tempo de tomar impulso', () => {
+    const tr = getTrack(7);
+    const h = tr.holes[0]!;
+    const ps = players();
+    const st = def.createInitialState(7, ps) as CorridaState;
+    const me = st.players[ps[0]!.id]!;
+    me.x = h.x + h.w / 2; me.y = -3; me.grounded = false; me.vy = -50; me.stunMs = 0; me.invulnMs = 0;
+    def.step(st, { [ps[0]!.id]: { run: 1, jump: false, duck: false } } as never, TICK_MS);
+    expect(me.falling).toBe(true);
+    expect(me.respawnX).toBeLessThan(h.x - 40);
   });
 });

@@ -15,11 +15,14 @@ export interface BridgeState {
   toast?: { key: number; text: string; tone: 'good' | 'bad' | 'info' } | null;
 }
 
+/** Estado dos controles de toque (lido pela cena a cada quadro). aimAngle: analógico de mira segurado; shotAngle/shotUntil: tiro ao soltar. */
+export interface TouchState { dx: number; dy: number; action: boolean; fire: boolean; run: boolean; duck: boolean; aimAngle: number | null; shotAngle: number | null; shotUntil: number }
+
 /** O que a cena Phaser e os controles de toque usam. LabClient (laboratório) e RoomClient (partida) cumprem. */
 export interface BridgeClient {
   state: BridgeState;
   latest: Snapshot | null;
-  touch: { dx: number; dy: number; action: boolean; fire: boolean; run: boolean };
+  touch: TouchState;
   touchPresses: Array<'L' | 'U' | 'D' | 'R'>;
   onSnapshotEvents: Array<(s: Snapshot) => void>;
   sendInput(input: unknown): void;

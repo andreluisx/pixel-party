@@ -102,13 +102,16 @@ export class ArcherView implements GameView {
     if (me) {
       const sx = me.x, sy = me.y - 9;
       const px = ptr.x, py = ptr.y; // coordenadas do jogo (480x270)
-      if (ptr.isDown || ptr.x !== 0 || ptr.y !== 0) aim = Math.atan2(py - sy, px - sx); // as flechas não atravessam as laterais: mira direta
-      if (ptr.isDown) fire = true;
+      const usePtr = !pad.twin; // celular: só os analógicos (o ponteiro do canvas é ignorado)
+      if (usePtr && (ptr.isDown || ptr.x !== 0 || ptr.y !== 0)) aim = Math.atan2(py - sy, px - sx); // as flechas não atravessam as laterais: mira direta
+      if (usePtr && ptr.isDown) fire = true;
+      if (pad.aimAngle != null) aim = pad.aimAngle; // segurando o analógico de mira: só aponta
+      if (pad.shotAngle != null) { aim = pad.shotAngle; fire = true; } // soltou: atira
       if (pad.fire) {
         // mira assistida: inimigo mais próximo, com compensação de gravidade
         let best: Archer | null = null, bd = Infinity;
         for (const id of this.latest?.order ?? []) { if (id === this.myId) continue; const o = this.latest!.players[id]!; if (!o.alive) continue; const d = Math.hypot(o.x - me.x, o.y - me.y); if (d < bd) { bd = d; best = o; } }
-        if (best && !ptr.isDown) aim = solveAim({ x: sx, y: sy }, { x: best.x, y: best.y - 7 }, me.special === 'fire');
+        if (best && !(usePtr && ptr.isDown)) aim = solveAim({ x: sx, y: sy }, { x: best.x, y: best.y - 7 }, me.special === 'fire');
         fire = true;
       }
     }

@@ -1,3 +1,4 @@
+import type { TouchState } from './bridge';
 import { io, type Socket } from 'socket.io-client';
 import type { ClientToServerEvents, LabConfig, LabLobby, ResultPayload, ServerToClientEvents, Snapshot } from '@shared/protocol';
 import type { MinigameMeta } from '@shared/minigame';
@@ -29,7 +30,7 @@ export class LabClient {
 
   // Lidos pela cena Phaser a cada frame (não passam pelo React).
   latest: Snapshot | null = null;
-  touch = { dx: 0, dy: 0, action: false, fire: false, run: false };
+  touch: TouchState = { dx: 0, dy: 0, action: false, fire: false, run: false, duck: false, aimAngle: null, shotAngle: null, shotUntil: 0 };
   touchPresses: Array<'L' | 'U' | 'D' | 'R'> = [];
   private seq = 0;
   private lastSent = '';

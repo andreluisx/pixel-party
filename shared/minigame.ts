@@ -15,7 +15,7 @@ export interface MinigameInstructions {
   lines: string[];
   controls: ControlHint[];
   /** Controles de toque: joystick e/ou botão de ação (rótulo). */
-  touch?: { stick: boolean; action?: string; fire?: string; dpad?: boolean; aimToggle?: boolean };
+  touch?: { stick: boolean; action?: string; fire?: string; dpad?: boolean; aimToggle?: boolean; /** botão ABAIXAR */ duck?: string; /** dois analógicos: esquerdo anda, direito mira e atira ao soltar */ twin?: boolean };
 }
 
 /** Um "cérebro" de bot para um minigame. Vê o mesmo estado que um humano veria. */

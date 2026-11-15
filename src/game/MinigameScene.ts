@@ -69,8 +69,9 @@ export function createMinigameSceneClass(PhaserLib: typeof Phaser, bridge: Scene
       let dy = (down('S', 'DOWN') ? 1 : 0) - (down('W', 'UP') ? 1 : 0);
       if (dx === 0) dx = t.dx;
       if (dy === 0) dy = t.dy;
+      if (dy === 0 && t.duck) dy = 1;
       const pressed: PressKey[] = [...this.keyQueue.splice(0), ...bridge.client.touchPresses.splice(0)];
-      return { dx, dy, action: down('SPACE', 'ENTER') || t.action, aim: bridge.client.state.aimMode, run: down('SHIFT') || t.run, fire: down('F') || t.fire, pressed };
+      return { dx, dy, action: down('SPACE', 'ENTER') || t.action, aim: bridge.client.state.aimMode, run: down('SHIFT') || t.run, fire: down('F') || t.fire, pressed, aimAngle: t.aimAngle, shotAngle: performance.now() < t.shotUntil ? t.shotAngle : null, twin: !!bridge.client.state.intro?.meta.instructions.touch?.twin && typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches };
     }
 
     update(time: number) {

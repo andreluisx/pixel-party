@@ -306,3 +306,10 @@ input[type='range'] { padding: 0; accent-color: var(--gold); }
 @media (max-width: 700px) { .stage-final .cer-main { overflow-y: auto; min-height: 0; } .stage-final .cer-row { padding: .4em .6em; } }
 .pxicon { display: inline-block; vertical-align: -.18em; image-rendering: pixelated; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Analógico de mira (2 analógicos) e botão ABAIXAR */
+.aimstick { left: auto; right: 12px; background: rgba(201,58,58,.18); border-color: rgba(255,180,160,.6); }
+.aim-knob { background: rgba(224,84,84,.9); }
+.actionbtn.beside-aim { right: 138px; bottom: 22px; width: 84px; height: 84px; }
+.actionbtn.duckbtn { right: 120px; bottom: 14px; background: #4da3ff; box-shadow: 0 5px 0 #1d4f8a; color: #fff; font-size: .9rem; }
+.actionbtn.duckbtn:active { box-shadow: 0 2px 0 #1d4f8a; }

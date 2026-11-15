@@ -16,7 +16,7 @@ import { buildBoard } from '@shared/board/board';
 import { REINO_DO_CASTELO } from '@shared/board/maps/reino-do-castelo';
 import type { PublicGame } from '@shared/protocol';
 import { FinalCeremony } from './FinalCeremony';
-import { ActionButton, DPad, FireButton, ModeToggle, ResultTable, RobotIcon, TouchPad } from './Lab';
+import { ActionButton, AimStick, DuckButton, DPad, FireButton, ModeToggle, ResultTable, RobotIcon, TouchPad } from './Lab';
 
 /** Tela da partida: o tabuleiro (Phaser) + avisos, pedidos de ação e os minigames da própria sala. */
 export function MatchStage({ client, st, room }: { client: RoomClient; st: RoomClientState; room: RoomState }) {
@@ -121,7 +121,9 @@ export function MatchStage({ client, st, room }: { client: RoomClient; st: RoomC
           {phase === 'active' && meta?.instructions.touch?.dpad && <DPad client={client} />}
           {phase === 'active' && meta?.instructions.touch?.fire && <FireButton client={client} label={meta.instructions.touch.fire} />}
           {phase === 'active' && meta?.instructions.touch?.aimToggle && <ModeToggle client={client} aim={st.aimMode} locked={!!hud.locked} />}
-          {phase === 'active' && meta?.instructions.touch?.action && <ActionButton client={client} label={meta.instructions.touch.action} />}
+          {phase === 'active' && meta?.instructions.touch?.twin && <AimStick client={client} />}
+          {phase === 'active' && meta?.instructions.touch?.duck && <DuckButton client={client} label={meta.instructions.touch.duck} />}
+          {phase === 'active' && meta?.instructions.touch?.action && <ActionButton client={client} label={meta.instructions.touch.action} beside={!!meta.instructions.touch.twin} />}
         </div>
         <p className="hint under">
           {onBoard ? 'Tabuleiro: Espaço rola o dado · setas/WASD ou toque escolhem o caminho · estrela custa 25 moedas (menos para quem está bem atrás).' : meta ? meta.instructions.controls.map((c) => `${c.keys}: ${c.action}`).join(' · ') : ''}

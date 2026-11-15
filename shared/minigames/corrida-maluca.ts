@@ -211,6 +211,18 @@ export interface CorridaState {
 }
 export interface CorridaInput { run: -1 | 0 | 1; jump: boolean; duck?: boolean }
 
+/** Onde renascer depois de cair: bem antes do buraco (dá tempo de tomar impulso e pular), em chão firme e longe de obstáculos. */
+export const RESPAWN_BACK = 78;
+export function safeRespawnX(track: Track, holeX: number): number {
+  let x = Math.max(24, holeX - RESPAWN_BACK);
+  for (let k = 0; k < 12; k++) {
+    const bad = holeAt(track, x) || holeAt(track, x + 14) || track.beams.some((b) => Math.abs(b.x - x) < 30) || track.crates.some((c) => Math.abs(c.x - x) < 26) || track.muds.some((m) => x > m.x - 8 && x < m.x + m.w + 8);
+    if (!bad) break;
+    x = Math.max(24, x - 14);
+  }
+  return x;
+}
+
 function holeAt(track: Track, x: number): Hole | undefined {
   return track.holes.find((h) => x > h.x + 3 && x < h.x + h.w - 3);
 }
@@ -388,7 +400,7 @@ function stepRunner(s: CorridaState, track: Track, id: PlayerId, r: Runner, inp:
   // chão / plataformas
   const floor = floorAt(track, crates, r.x, prevY);
   if (floor === -Infinity) {
-    if (r.y <= -2 && !r.grounded) { r.falling = true; r.respawnMs = RESPAWN_MS; const h = holeAt(track, r.x)!; r.respawnX = h.x - 10; }
+    if (r.y <= -2 && !r.grounded) { r.falling = true; r.respawnMs = RESPAWN_MS; const h = holeAt(track, r.x)!; r.respawnX = safeRespawnX(track, h.x); }
     else if (r.grounded) { r.grounded = false; }
   }
   if (r.vy <= 0 && r.y <= floor && floor > -Infinity) { r.y = floor; r.vy = 0; r.grounded = true; }
@@ -554,7 +566,7 @@ export const corridaMaluca: MinigameDefinition<CorridaState, CorridaInput> = {
       { keys: '→ / D', action: 'correr mais rápido' },
       { keys: '← / A', action: 'frear' },
     ],
-    touch: { stick: true, action: 'PULAR' },
+    touch: { stick: true, action: 'PULAR', duck: 'ABAIXAR' },
   },
   neutralInput: () => ({ run: 0, jump: false, duck: false }),
   sanitizeInput(raw) {

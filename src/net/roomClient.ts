@@ -1,6 +1,6 @@
 import { io, type Socket } from 'socket.io-client';
 import type { ClientToServerEvents, GameUpdate, RoomState, ServerToClientEvents, Snapshot } from '@shared/protocol';
-import type { BridgeClient, BridgeState } from './bridge';
+import type { TouchState, BridgeClient, BridgeState } from './bridge';
 import type { Intent } from '@shared/game/engine';
 import type { BotDifficulty, PlayerId, Slot } from '@shared/types';
 
@@ -17,7 +17,7 @@ export class RoomClient implements BridgeClient {
 
   // lidos pela cena Phaser a cada quadro (não passam pelo React)
   latest: Snapshot | null = null;
-  touch = { dx: 0, dy: 0, action: false, fire: false, run: false };
+  touch: TouchState = { dx: 0, dy: 0, action: false, fire: false, run: false, duck: false, aimAngle: null, shotAngle: null, shotUntil: 0 };
   touchPresses: Array<'L' | 'U' | 'D' | 'R'> = [];
   onSnapshotEvents: Array<(s: Snapshot) => void> = [];
   private pending: GameUpdate[] = [];
