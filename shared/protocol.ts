@@ -45,6 +45,8 @@ export interface GameUpdate { seq: number; game: PublicGame; events: GEvent[]; w
 export type Ack<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
 export interface ClientToServerEvents {
+  /** medição de latência (ms): o servidor só responde ao ack */
+  'net:ping': (ack?: () => void) => void;
   'lab:create': (cfg: Partial<LabConfig> & { name?: string }, ack: (r: Ack<{ you: PlayerId; lobby: LabLobby }>) => void) => void;
   'lab:join': (p: { code: string; name?: string }, ack: (r: Ack<{ you: PlayerId; lobby: LabLobby }>) => void) => void;
   'lab:rejoin': (p: { code: string; you: PlayerId }, ack: (r: Ack<{ you: PlayerId; lobby: LabLobby }>) => void) => void;

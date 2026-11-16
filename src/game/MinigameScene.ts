@@ -8,7 +8,6 @@ import { BoardView } from './views/BoardView';
 import type { GameView, Pad, PressKey } from './views/GameView';
 import { ArenaView } from './views/ArenaView';
 import { CorridaView } from './views/CorridaView';
-import { ReflexView } from './views/ReflexView';
 import { LedFloorView } from './views/LedFloorView';
 import { DuelView } from './views/DuelView';
 import { PuzzleView } from './views/PuzzleView';
@@ -22,7 +21,6 @@ export interface SceneBridge { client: BridgeClient; getDebug: () => boolean }
 const VIEWS: Record<string, (scene: Phaser.Scene, ps: import('@shared/types').ParticipantInfo[], me: string | null) => GameView> = {
   'caca-moedas': (s, ps, me) => new ArenaView(s, ps, me),
   'corrida-maluca': (s, ps, me) => new CorridaView(s, ps, me),
-  'reflexo-relampago': (s, ps, me) => new ReflexView(s, ps, me),
   'piso-led': (s, ps, me) => new LedFloorView(s, ps, me),
   'ultimo-disparo': (s, ps, me) => new DuelView(s, ps, me),
   'quebra-cabeca': (s, ps, me) => new PuzzleView(s, ps, me),

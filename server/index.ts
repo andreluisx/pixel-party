@@ -52,6 +52,7 @@ const cleanName = (n?: string) => (n ?? '').toString().trim().slice(0, 14);
 io.on('connection', (socket: Sock) => {
   const roomOf = () => rooms.get(socket.data.roomCode as string);
 
+  socket.on('net:ping', (ack) => { if (typeof ack === 'function') ack(); });
   socket.on('lab:create', (cfg, ack) => {
     const code = newCode();
     const room = new LabRoom(io, code, socket, cleanName(cfg?.name), cfg ?? {});

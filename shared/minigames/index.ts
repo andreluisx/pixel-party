@@ -5,12 +5,11 @@ import { ultimoDisparo } from './ultimo-disparo';
 import { quebraCabeca } from './quebra-cabeca';
 import { dueloArqueiros } from './duelo-arqueiros';
 import { corridaMaluca } from './corrida-maluca';
-import { reflexoRelampago } from './reflexo-relampago';
 import { chuvaDePedras } from './chuva-de-pedras';
 import { futebolBotao } from './futebol-botao';
 
 // Novos minigames entram aqui (um arquivo por minigame, um registro por linha).
-const ALL: MinigameDefinition<any, any>[] = [corridaMaluca, reflexoRelampago, cacaMoedas, pisoLed, ultimoDisparo, quebraCabeca, dueloArqueiros, chuvaDePedras, futebolBotao];
+const ALL: MinigameDefinition<any, any>[] = [corridaMaluca, cacaMoedas, pisoLed, ultimoDisparo, quebraCabeca, dueloArqueiros, chuvaDePedras, futebolBotao];
 
 export const MINIGAMES: Record<string, MinigameDefinition<any, any>> = Object.fromEntries(ALL.map((m) => [m.id, m]));
 export const MINIGAME_LIST = ALL;

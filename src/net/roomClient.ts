@@ -4,7 +4,7 @@ import type { TouchState, BridgeClient, BridgeState } from './bridge';
 import type { Intent } from '@shared/game/engine';
 import type { BotDifficulty, PlayerId, Slot } from '@shared/types';
 
-export interface RoomClientState extends BridgeState { connected: boolean; you: PlayerId | null; room: RoomState | null; error: string | null }
+export interface RoomClientState extends BridgeState { connected: boolean; you: PlayerId | null; room: RoomState | null; error: string | null; /** latência até o servidor (média das últimas medidas), em ms */ pingMs: number | null }
 type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 const SESSION_KEY = 'pixel-party:room-session';
 
@@ -13,7 +13,7 @@ export class RoomClient implements BridgeClient {
   private socket: AppSocket;
   private listeners = new Set<() => void>();
   private errorTimer: ReturnType<typeof setTimeout> | null = null;
-  state: RoomClientState = { connected: false, you: null, room: null, error: null, intro: null, countdown: null, result: null, aimMode: false, lobby: null, game: null, toast: null };
+  state: RoomClientState = { connected: false, you: null, room: null, error: null, pingMs: null, intro: null, countdown: null, result: null, aimMode: false, lobby: null, game: null, toast: null };
 
   // lidos pela cena Phaser a cada quadro (não passam pelo React)
   latest: Snapshot | null = null;
@@ -35,8 +35,20 @@ export class RoomClient implements BridgeClient {
       const saved = this.loadSession();
       if (saved) this.rejoin(saved.code, saved.you);
     });
-    s.on('disconnect', () => this.set({ connected: false }));
-    s.on('connect_error', () => this.set({ connected: false }));
+    s.on('disconnect', () => this.set({ connected: false, pingMs: null }));
+    s.on('connect_error', () => this.set({ connected: false, pingMs: null }));
+    const samples: number[] = [];
+    const measure = () => {
+      if (!s.connected) return;
+      const t0 = performance.now();
+      s.emit('net:ping', () => {
+        samples.push(performance.now() - t0);
+        if (samples.length > 5) samples.shift();
+        this.set({ pingMs: Math.round(samples.reduce((a, b) => a + b, 0) / samples.length) });
+      });
+    };
+    this.pingTimer = setInterval(measure, 2000);
+    s.on('connect', measure);
     s.on('room:state', (room) => this.set({ room }));
     s.on('room:error', (m) => this.flashError(m));
     s.on('game:error', (m) => this.flashError(m));
@@ -128,5 +140,6 @@ export class RoomClient implements BridgeClient {
   start() { this.socket.emit('room:start'); }
   backToLobby() { this.socket.emit('room:backToLobby'); }
   leave() { this.socket.emit('room:leave'); this.clearSession(); this.latest = null; this.pending = []; this.set({ you: null, room: null, game: null, intro: null, result: null, countdown: null, lobby: null, toast: null }); }
-  dispose() { this.socket.removeAllListeners(); this.socket.disconnect(); this.listeners.clear(); }
+  private pingTimer: ReturnType<typeof setInterval> | null = null;
+  dispose() { if (this.pingTimer) clearInterval(this.pingTimer); this.socket.removeAllListeners(); this.socket.disconnect(); this.listeners.clear(); }
 }

@@ -15,7 +15,7 @@ import { MenuBackdrop } from './MenuBackdrop';
 import { MatchStage } from './MatchStage';
 
 type Screen = 'menu' | 'create' | 'join' | 'characters' | 'settings';
-const EMPTY: RoomClientState = { connected: false, you: null, room: null, error: null, intro: null, countdown: null, result: null, aimMode: false, lobby: null, game: null, toast: null };
+const EMPTY: RoomClientState = { connected: false, you: null, room: null, error: null, pingMs: null, intro: null, countdown: null, result: null, aimMode: false, lobby: null, game: null, toast: null };
 const DIFFS: { id: BotDifficulty; label: string }[] = [{ id: 'easy', label: 'Fácil' }, { id: 'medium', label: 'Médio' }, { id: 'hard', label: 'Difícil' }];
 
 function RobotIcon() {
@@ -83,7 +83,7 @@ export function GameApp() {
       <MenuBackdrop />
       <div className="app-veil" />
       {st.error && <div className="toast" role="alert">{st.error}</div>}
-      <span className={`net-dot ${st.connected ? 'on' : 'off'}`} title={st.connected ? 'Servidor conectado' : 'Sem servidor'}>{st.connected ? 'online' : 'sem servidor'}</span>
+      <span className={`net-dot ${st.connected ? 'on' : 'off'}`} title={st.connected ? 'Servidor conectado' : 'Sem servidor'}>{st.connected ? (st.pingMs !== null ? `online · ${st.pingMs} ms` : 'online') : 'sem servidor'}</span>
 
       <main className="shell">
         {room && client ? (

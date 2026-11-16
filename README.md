@@ -335,3 +335,7 @@ Partida jogável de ponta a ponta: 1 a 4 humanos + bots, 12 rodadas, um minigame
 
 ## Deploy do servidor no Fly.io
 `Dockerfile`, `.dockerignore` e `fly.toml` na raiz (Node 22, região `gru`/São Paulo). Use `fly deploy` ou o deploy pelo GitHub; o gerador automático do Fly usava Node 16 + yarn, o que quebra o build (Next 16 exige Node ≥ 20.9). No site (Vercel): `NEXT_PUBLIC_SERVER_URL=https://pixel-party.fly.dev`.
+
+## Entrega 23 — Reflexo Relâmpago removido + ping
+- Minigame "Reflexo Relâmpago" removido (definição, view, teste e registro). Restam 8 minigames.
+- Ping: o cliente mede a latência até o servidor a cada 2 s (evento `net:ping`, média das últimas 5 medidas) e mostra no canto superior direito: "online · 42 ms".
