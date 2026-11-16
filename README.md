@@ -329,3 +329,6 @@ Partida jogável de ponta a ponta: 1 a 4 humanos + bots, 12 rodadas, um minigame
 - Corrida Maluca: botão **ABAIXAR** na tela (ao lado do PULAR) e, ao cair no buraco, o corredor renasce ~78 px antes dele, em chão firme e longe de obstáculos (`safeRespawnX`), com tempo para tomar impulso e pular.
 - Duelo de Arqueiros (celular): 2 analógicos — esquerdo anda/corre, direito **mira e atira ao soltar** — e botão PULAR logo ao lado do analógico de mira. O ponteiro do canvas é ignorado no celular nesse jogo. No PC nada muda.
 - Novos campos de toque: `instructions.touch.duck` / `.twin`; componentes `AimStick` e `DuckButton` em `src/components/Lab.tsx`.
+
+## Entrega 22 — Novo fundo da tela inicial
+- `src/components/MenuBackdrop.tsx` redesenhado (canvas 360×174, pixel art procedural) com base na arte de referência: céu violeta→rosa, lua cheia com crateras e brilho, estrelas e brilhos em cruz, nuvens em camadas, montanhas, castelo com janelas e bandeiras ao vento, floresta nas laterais, lago com reflexo da lua e marolas, ilha com flores e plantas nos cantos, personagens como antes. Respeita "reduzir movimento".
