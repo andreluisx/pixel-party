@@ -1,19 +1,24 @@
-app = "pixel-party"
-primary_region = "gru" # São Paulo: menor latência para o Brasil
+# fly.toml app configuration file generated for pixel-party on 2026-11-16T00:29:36Z
+#
+# See https://docs.fly.io/reference/configuration for information about how to use this file.
+#
+
+app = 'pixel-party'
+primary_region = 'gru'
 
 [build]
-
 [env]
-  PORT = "8080"
+  PORT = '8080'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"   # dorme sem ninguém jogando (grátis/barato); acorda na primeira conexão
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
 
 [[vm]]
-  memory = "512mb"
-  cpu_kind = "shared"
+  memory = '512mb'
+  cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 512
