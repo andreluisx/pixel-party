@@ -332,3 +332,6 @@ Partida jogável de ponta a ponta: 1 a 4 humanos + bots, 12 rodadas, um minigame
 
 ## Entrega 22 — Novo fundo da tela inicial
 - `src/components/MenuBackdrop.tsx` redesenhado (canvas 360×174, pixel art procedural) com base na arte de referência: céu violeta→rosa, lua cheia com crateras e brilho, estrelas e brilhos em cruz, nuvens em camadas, montanhas, castelo com janelas e bandeiras ao vento, floresta nas laterais, lago com reflexo da lua e marolas, ilha com flores e plantas nos cantos, personagens como antes. Respeita "reduzir movimento".
+
+## Deploy do servidor no Fly.io
+`Dockerfile`, `.dockerignore` e `fly.toml` na raiz (Node 22, região `gru`/São Paulo). Use `fly deploy` ou o deploy pelo GitHub; o gerador automático do Fly usava Node 16 + yarn, o que quebra o build (Next 16 exige Node ≥ 20.9). No site (Vercel): `NEXT_PUBLIC_SERVER_URL=https://pixel-party.fly.dev`.

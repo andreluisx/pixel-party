@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+tests
+docs
+src
+scripts
+test-results
+*.zip

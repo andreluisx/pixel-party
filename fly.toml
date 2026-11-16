@@ -1,0 +1,19 @@
+app = "pixel-party"
+primary_region = "gru" # São Paulo: menor latência para o Brasil
+
+[build]
+
+[env]
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"   # dorme sem ninguém jogando (grátis/barato); acorda na primeira conexão
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
